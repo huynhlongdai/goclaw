@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { useTasksStore } from "@/stores/use-tasks-store";
 import { useAgents } from "@/pages/agents/hooks/use-agents";
 import type { TaskStatus, TaskPriority } from "@/types/task";
-import { TASK_PRIORITY_META } from "@/types/task";
+import { TASK_PRIORITY_META, TASK_STATUS_META, KANBAN_COLUMNS } from "@/types/task";
 import { cn } from "@/lib/utils";
 
 interface TaskCreateDialogProps {
@@ -20,8 +20,10 @@ export function TaskCreateDialog({ open, onOpenChange, initialStatus = "todo" }:
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [status, setStatus] = useState<TaskStatus>(initialStatus);
   const [assigneeId, setAssigneeId] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
   const handleCreate = () => {
     if (!title.trim()) return;
@@ -31,8 +33,9 @@ export function TaskCreateDialog({ open, onOpenChange, initialStatus = "todo" }:
     addTask({
       title: title.trim(),
       description: description.trim() || undefined,
-      status: initialStatus,
+      status,
       priority,
+      due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
       assignee_type: assigneeAgent ? "agent" : undefined,
       assignee_id: assigneeAgent?.id,
       assignee_name: assigneeAgent ? (assigneeAgent.display_name || assigneeAgent.agent_key) : undefined,
@@ -40,7 +43,7 @@ export function TaskCreateDialog({ open, onOpenChange, initialStatus = "todo" }:
       tags: tags.length > 0 ? tags : undefined,
     });
 
-    setTitle(""); setDescription(""); setPriority("medium"); setAssigneeId(""); setTagsInput("");
+    setTitle(""); setDescription(""); setPriority("medium"); setStatus(initialStatus); setAssigneeId(""); setTagsInput(""); setDueDate("");
     onOpenChange(false);
   };
 
@@ -128,6 +131,31 @@ export function TaskCreateDialog({ open, onOpenChange, initialStatus = "todo" }:
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* Status + Due date */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Trạng thái</label>
+              <div className="flex flex-col gap-1">
+                {KANBAN_COLUMNS.map((s) => (
+                  <button key={s} type="button" onClick={() => setStatus(s)}
+                    className={cn("flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-left transition-colors",
+                      status === s ? "bg-accent font-medium" : "hover:bg-muted text-muted-foreground"
+                    )}>
+                    <span className={cn("h-2 w-2 rounded-full shrink-0",
+                      s === "todo" ? "bg-slate-400" : s === "in_progress" ? "bg-blue-500" : s === "in_review" ? "bg-amber-500" : s === "blocked" ? "bg-red-500" : "bg-green-500"
+                    )} />
+                    {TASK_STATUS_META[s].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Hạn chật</label>
+              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+                className="w-full rounded-lg border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring" />
             </div>
           </div>
 
