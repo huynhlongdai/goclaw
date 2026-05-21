@@ -1,4 +1,4 @@
-import { Bot, Star, Trash2, RotateCcw, Sparkles } from "lucide-react";
+import { Bot, Star, Trash2, RotateCcw, Sparkles, Terminal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ export function AgentListRow({ agent, ownerName, onClick, onResummon, onDelete }
   const { t } = useTranslation("agents");
   const displayName = agentDisplayName(agent, t("card.unnamedAgent"));
   const selfEvolve = agent.agent_type === "predefined" && Boolean(agent.self_evolve);
+  const isCommand = agent.agent_type === "command";
   const emoji = agent.emoji ?? "";
   const hasOAuthRouting = hasActiveChatGPTOAuthRouting(agent.chatgpt_oauth_routing);
   const promptMode = readPromptMode(agent);
@@ -32,7 +33,7 @@ export function AgentListRow({ agent, ownerName, onClick, onResummon, onDelete }
     >
       {/* Icon */}
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        {emoji ? <span className="text-base leading-none">{emoji}</span> : <Bot className="h-4 w-4" />}
+        {emoji ? <span className="text-base leading-none">{emoji}</span> : isCommand ? <Terminal className="h-4 w-4 text-violet-500" /> : <Bot className="h-4 w-4" />}
       </div>
 
       {/* Name + key */}
@@ -40,6 +41,7 @@ export function AgentListRow({ agent, ownerName, onClick, onResummon, onDelete }
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-semibold">{displayName}</span>
           {agent.is_default && <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />}
+          {isCommand && <span className="shrink-0 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-violet-600 dark:text-violet-400">CAO</span>}
         </div>
         {agent.display_name && !UUID_RE.test(agent.agent_key) && (
           <div className="truncate text-xs text-muted-foreground">{agent.agent_key}</div>

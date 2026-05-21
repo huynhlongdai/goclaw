@@ -7,6 +7,7 @@ import { usePortalDropdownClose } from "@/hooks/use-portal-dropdown-close";
 import { useProviders } from "@/pages/providers/hooks/use-providers";
 import { useProviderModels } from "@/pages/providers/hooks/use-provider-models";
 import { cn } from "@/lib/utils";
+import { toast } from "@/stores/use-toast-store";
 import type { AgentData } from "@/types/agent";
 
 interface ModelQuickPickerProps {
@@ -72,7 +73,10 @@ export function ModelQuickPicker({ agentId, onUpdated }: ModelQuickPickerProps) 
       setAgent((prev) => prev ? { ...prev, provider, model } : prev);
       onUpdated?.(model, provider);
       setOpen(false);
-    } catch { /* ignore */ } finally {
+      toast.success("Model đã cập nhật", `${model.split("/").pop() ?? model}`);
+    } catch {
+      toast.error("Cập nhật thất bại", "Không thể đổi model");
+    } finally {
       setSaving(false);
     }
   };

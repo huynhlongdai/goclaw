@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Plus, LayoutGrid, List, Bot, Clock, Trash2 } from "lucide-react";
+import { Plus, LayoutGrid, List, Bot, Clock, Trash2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
 import { useTasksStore, tasksByStatus } from "@/stores/use-tasks-store";
@@ -17,14 +17,32 @@ export function TasksPage() {
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
+  const [search, setSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
   const openCreate = (status: TaskStatus = "todo") => {
     setCreateInitialStatus(status);
     setCreateOpen(true);
   };
 
-  const grouped = useMemo(() => tasksByStatus(tasks), [tasks]);
-  const openTasks = tasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((t) =>
+        t.title.toLowerCase().includes(q) ||
+        (t.description ?? "").toLowerCase().includes(q) ||
+        (t.tags ?? []).some((tag) => tag.includes(q))
+      );
+    }
+    if (priorityFilter !== "all") {
+      result = result.filter((t) => t.priority === priorityFilter);
+    }
+    return result;
+  }, [tasks, search, priorityFilter]);
+
+  const grouped = useMemo(() => tasksByStatus(filteredTasks), [filteredTasks]);
+  const openTasks = filteredTasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData("taskId", taskId);
@@ -74,6 +92,45 @@ export function TasksPage() {
             Task mới
           </button>
         </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex shrink-0 items-center gap-2 border-b px-4 py-2 bg-muted/20">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm task..."
+            className="w-full rounded-lg border bg-background pl-8 pr-3 py-1.5 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {(["all", "urgent", "high", "medium", "low"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPriorityFilter(p)}
+              className={cn(
+                "rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
+                priorityFilter === p
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {p === "all" ? "Tất cả" : p === "urgent" ? "⚠ Khẩn" : p === "high" ? "↑ Cao" : p === "medium" ? "= TB" : "↓ Thấp"}
+            </button>
+          ))}
+        </div>
+        {(search || priorityFilter !== "all") && (
+          <span className="text-[11px] text-muted-foreground">{filteredTasks.length} task</span>
+        )}
       </div>
 
       {/* Content */}
@@ -136,7 +193,7 @@ export function TasksPage() {
             })}
           </div>
         ) : (
-          <ListView tasks={tasks} onSelect={setSelectedTask} onDelete={deleteTask} />
+          <ListView tasks={filteredTasks} onSelect={setSelectedTask} onDelete={deleteTask} />
         )}
       </div>
 

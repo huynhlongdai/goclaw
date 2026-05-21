@@ -17,7 +17,7 @@ function genId() {
 
 export const useTasksStore = create<TasksState>()(
   persist(
-    (set, _get) => ({
+    (set) => ({
       tasks: [] as Task[],
 
       addTask: (data) => {
