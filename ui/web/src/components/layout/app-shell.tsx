@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate, Link } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { WifiOff, LayoutDashboard, MessageSquare, Bot, MoreHorizontal } from "lucide-react";
+import { WifiOff, LayoutDashboard, MessageSquare, Bot, MoreHorizontal, KanbanSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavRail, getActiveSectionId, GROUPED_SECTIONS, FIRST_ROUTE_FOR_SECTION } from "./nav-rail";
 import type { NavSectionId } from "./nav-rail";
@@ -152,12 +152,19 @@ function MobileBottomNav({ activeSectionId }: MobileBottomNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const primaryItems = [
-    { id: "overview" as NavSectionId, icon: LayoutDashboard, label: t("nav.overview"), to: ROUTES.OVERVIEW },
     { id: "chat" as NavSectionId, icon: MessageSquare, label: t("nav.chat"), to: ROUTES.CHAT },
     { id: "agents" as NavSectionId, icon: Bot, label: t("nav.agents"), to: ROUTES.AGENTS },
+    { id: "work" as NavSectionId, icon: KanbanSquare, label: "Work", to: ROUTES.WORK_TASKS },
+    { id: "overview" as NavSectionId, icon: LayoutDashboard, label: t("nav.overview"), to: ROUTES.OVERVIEW },
   ];
 
   const moreGroups = [
+    {
+      label: "Work",
+      items: [
+        { label: "Task Board", to: ROUTES.WORK_TASKS },
+      ],
+    },
     {
       label: t("groups.conversations"),
       items: [

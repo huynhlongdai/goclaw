@@ -33,28 +33,28 @@ export const ActiveRunZone = memo(function ActiveRunZone({
   if (!isRunning && !hasContent) return null;
 
   return (
-    <div className="flex gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background">
-        <Bot className="h-4 w-4" />
+    <div className="flex items-start gap-2.5 animate-in fade-in-0 duration-200">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-card shadow-xs">
+        <Bot className="h-3.5 w-3.5" />
       </div>
 
-      <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex-1 min-w-0 space-y-2">
         {blockReplies.map((msg, i) => (
           <BlockReplyBubble key={msg.timestamp ?? i} message={msg} />
         ))}
 
-        {/* Tool cards: match MessageBubble's compact grouped layout */}
+        {/* Tool cards */}
         {toolStream.length > 0 && (
-          <div className="rounded-md border bg-muted divide-y divide-border">
+          <div className="rounded-xl border bg-muted/30 divide-y divide-border overflow-hidden">
             {toolStream.map((entry) => (
               <ToolCallCard key={entry.toolCallId} entry={entry} compact />
             ))}
           </div>
         )}
 
-        {/* Streaming text: wrap in bubble matching MessageBubble's assistant style */}
+        {/* Streaming text */}
         {(thinkingText !== null || streamText !== null) && (
-          <div className="flex-1 min-w-0 rounded-lg px-4 py-2 bg-card text-card-foreground border border-border shadow-sm">
+          <div className="rounded-2xl rounded-tl-sm border bg-card px-4 py-3 shadow-xs text-card-foreground">
             {thinkingText !== null && (
               <div className={streamText !== null ? "mb-2" : ""}>
                 <ThinkingBlock text={thinkingText} isStreaming={isRunning && streamText === null} />

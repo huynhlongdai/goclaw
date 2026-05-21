@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { Link } from "react-router";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
@@ -10,6 +11,7 @@ export function StatCard({
   sub,
   sparkline,
   trend,
+  href,
 }: {
   icon: React.ElementType;
   label: string;
@@ -17,13 +19,14 @@ export function StatCard({
   sub?: string;
   sparkline?: number[];
   trend?: number | null;
+  href?: string;
 }) {
   const uid = useId();
   const gradId = `spark-${uid.replace(/:/g, "")}`;
   const sparkData = sparkline?.map((v) => ({ v }));
   const hasTrend = trend != null && trend !== 0;
 
-  return (
+  const inner = (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -88,4 +91,9 @@ export function StatCard({
       )}
     </motion.div>
   );
+
+  if (href) {
+    return <Link to={href} className="block">{inner}</Link>;
+  }
+  return inner;
 }

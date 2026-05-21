@@ -1,5 +1,5 @@
 import { useEffect, useCallback, lazy, Suspense } from "react";
-import { Activity, Bot, DollarSign, Hash, Radio, AlertTriangle } from "lucide-react";
+import { Activity, Bot, DollarSign, Hash, Radio, AlertTriangle, KanbanSquare } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/page-header";
@@ -31,6 +31,7 @@ import { CronJobsCard } from "./cron-jobs-card";
 import { RecentRequestsCard } from "./recent-requests-card";
 import { QuotaUsageCard } from "./quota-usage-card";
 import { useRuntimes } from "@/pages/skills/hooks/use-runtimes";
+import { useTasksStore } from "@/stores/use-tasks-store";
 import {
   getChannelAttentionPriority,
   getChannelStatusFallback,
@@ -127,6 +128,9 @@ export function OverviewPage() {
     : null;
   const enabledProviders = providers.filter((p) => p.enabled);
   const clientList = health?.clients ?? [];
+  const { tasks } = useTasksStore();
+  const tasksDone = tasks.filter((t) => t.status === "done").length;
+  const tasksOpen = tasks.filter((t) => t.status !== "done" && t.status !== "cancelled").length;
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -233,6 +237,13 @@ export function OverviewPage() {
                   : "0"
               }
               sub={agentTotal > 0 ? t("statCards.running") : undefined}
+            />
+            <StatCard
+              icon={KanbanSquare}
+              label="Work Tasks"
+              value={tasks.length > 0 ? `${tasksOpen}` : "0"}
+              sub={tasks.length > 0 ? `${tasksDone} hoàn thành` : "Chưa có task"}
+              href={ROUTES.WORK_TASKS}
             />
             <StatCard
               icon={Radio}

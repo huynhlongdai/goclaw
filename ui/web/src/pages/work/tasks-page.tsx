@@ -15,6 +15,7 @@ export function TasksPage() {
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
 
   const grouped = useMemo(() => tasksByStatus(tasks), [tasks]);
+  const openTasks = tasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData("taskId", taskId);
@@ -27,13 +28,13 @@ export function TasksPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex min-h-0 h-full flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-6 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b px-6 py-3">
         <div className="flex items-center gap-3">
           <div>
             <h1 className="text-base font-bold">Task Board</h1>
-            <p className="text-xs text-muted-foreground">{tasks.filter((t) => t.status !== "done" && t.status !== "cancelled").length} task đang mở</p>
+            <p className="text-xs text-muted-foreground">{openTasks.length} task đang mở · {tasks.filter((t) => t.status === "done").length} xong</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
