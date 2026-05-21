@@ -13,6 +13,7 @@ import { CommandPalette } from "@/components/command-palette/command-palette";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { useUiStore } from "@/stores/use-ui-store";
 import { useAuthStore } from "@/stores/use-auth-store";
+import { useBrandStore } from "@/stores/use-brand-store";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { usePendingPairingsCount } from "@/hooks/use-pending-pairings-count";
 import { ROUTES } from "@/lib/constants";
@@ -124,7 +125,7 @@ export function AppShell() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.14, ease: [0.0, 0.0, 0.2, 1.0] }}
-            className="min-w-0 flex-1 overflow-y-auto"
+            className={cn("min-w-0 flex-1 overflow-y-auto", isMobile && "pb-14")}
           >
             <ErrorBoundary key={stableErrorBoundaryKey(location.pathname)}>
               <Outlet />
@@ -150,13 +151,15 @@ function MobileBottomNav({ activeSectionId }: MobileBottomNavProps) {
   const { t } = useTranslation("sidebar");
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
+  const showWorkModule = useBrandStore((s) => s.showWorkModule);
 
-  const primaryItems = [
+  const allPrimaryItems = [
     { id: "chat" as NavSectionId, icon: MessageSquare, label: t("nav.chat"), to: ROUTES.CHAT },
     { id: "agents" as NavSectionId, icon: Bot, label: t("nav.agents"), to: ROUTES.AGENTS },
-    { id: "work" as NavSectionId, icon: KanbanSquare, label: "Work", to: ROUTES.WORK_TASKS },
+    { id: "work" as NavSectionId, icon: KanbanSquare, label: "Work", to: ROUTES.WORK_TASKS, hidden: !showWorkModule },
     { id: "overview" as NavSectionId, icon: LayoutDashboard, label: t("nav.overview"), to: ROUTES.OVERVIEW },
   ];
+  const primaryItems = allPrimaryItems.filter((i) => !("hidden" in i && i.hidden));
 
   const moreGroups = [
     {
@@ -207,21 +210,27 @@ function MobileBottomNav({ activeSectionId }: MobileBottomNavProps) {
   return (
     <>
       <nav className="flex shrink-0 items-center border-t bg-sidebar safe-bottom">
-        {primaryItems.map(({ id, icon: Icon, label, to }) => (
-          <Link
-            key={id}
-            to={to}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors",
-              activeSectionId === id
-                ? "text-sidebar-primary"
-                : "text-sidebar-foreground/50",
-            )}
-          >
-            <Icon className="h-5 w-5" />
-            <span>{label}</span>
-          </Link>
-        ))}
+        {primaryItems.map(({ id, icon: Icon, label, to }) => {
+          const isActive = activeSectionId === id;
+          return (
+            <Link
+              key={id}
+              to={to}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors",
+                isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50",
+              )}
+            >
+              <div className="relative flex items-center justify-center">
+                {isActive && (
+                  <span className="absolute inset-0 -m-1.5 rounded-xl bg-sidebar-primary/10" />
+                )}
+                <Icon className={cn("relative h-5 w-5 transition-transform", isActive && "scale-110")} />
+              </div>
+              <span>{label}</span>
+            </Link>
+          );
+        })}
         <button
           onClick={() => setMoreOpen(true)}
           className={cn(

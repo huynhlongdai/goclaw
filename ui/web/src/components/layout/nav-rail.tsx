@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Bot,
+  Palette,
   Users,
   Zap,
   Database,
@@ -36,6 +37,7 @@ import { useAuthStore } from "@/stores/use-auth-store";
 import { useTenants } from "@/hooks/use-tenants";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { AppLogo } from "@/components/brand/app-logo";
 import { AboutDialog } from "./about-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -188,7 +190,7 @@ export function NavRail({
       <aside className="flex w-12 shrink-0 flex-col items-center border-r bg-sidebar py-3 gap-0.5">
         {/* Logo */}
         <div className="mb-1 flex h-9 w-9 items-center justify-center">
-          <img src="/goclaw-icon.svg" alt="GoClaw" className="h-7 w-7" />
+          <AppLogo size={28} />
         </div>
 
         {/* Search / Command Palette trigger */}
@@ -314,6 +316,8 @@ function UserButton() {
   const logout = useAuthStore((s) => s.logout);
   const userId = useAuthStore((s) => s.userId);
   const connected = useAuthStore((s) => s.connected);
+  const role = useAuthStore((s) => s.role);
+  const isAdmin = role === "admin" || role === "owner";
   const language = useUiStore((s) => s.language);
   const setLanguage = useUiStore((s) => s.setLanguage);
   const { currentTenant, currentTenantName, tenants, isOwner, isMultiTenant, currentTenantId } =
@@ -418,6 +422,16 @@ function UserButton() {
               <KeyRound className="h-3.5 w-3.5 shrink-0" />
               <span>{t("apiKeys")}</span>
             </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => { setOpen(false); navigate(ROUTES.BRANDING); }}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+              >
+                <Palette className="h-3.5 w-3.5 shrink-0" />
+                <span>Thương hiệu & Giao diện</span>
+              </button>
+            )}
 
             <button
               onClick={() => { setOpen(false); setShowAbout(true); }}

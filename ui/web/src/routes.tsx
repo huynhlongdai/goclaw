@@ -12,6 +12,9 @@ import { lazyWithRetry } from "@/lib/lazy-with-retry";
 const LoginPage = lazyWithRetry(() =>
   import("@/pages/login/login-page").then((m) => ({ default: m.LoginPage })),
 );
+const BrandingPage = lazyWithRetry(() =>
+  import("@/pages/settings/branding-page").then((m) => ({ default: m.BrandingPage })),
+);
 const TasksPage = lazyWithRetry(() =>
   import("@/pages/work/tasks-page").then((m) => ({ default: m.TasksPage })),
 );
@@ -197,6 +200,9 @@ export function AppRoutes() {
           <Route path={ROUTES.PACKAGES} element={<RequireAdmin><PackagesPage /></RequireAdmin>} />
           <Route path={ROUTES.TENANTS} element={<RequireCrossTenant><TenantsAdminPage /></RequireCrossTenant>} />
           <Route path={ROUTES.TENANT_DETAIL} element={<RequireCrossTenant><TenantDetailPage /></RequireCrossTenant>} />
+
+          {/* Settings */}
+          <Route path={ROUTES.BRANDING} element={<RequireAdmin><BrandingPage /></RequireAdmin>} />
 
           {/* Work module */}
           <Route path={ROUTES.WORK} element={<Navigate to={ROUTES.WORK_TASKS} replace />} />

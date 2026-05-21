@@ -49,4 +49,5 @@ export const ROUTES = {
   HOOK_DETAIL: "/hooks/:id",
   WORK: "/work",
   WORK_TASKS: "/work/tasks",
+  BRANDING: "/settings/branding",
 } as const;
