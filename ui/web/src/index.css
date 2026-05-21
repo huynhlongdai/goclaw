@@ -26,6 +26,11 @@
   --ring: oklch(0.62 0.19 38);
   --chat-bubble-user: oklch(0.40 0.14 38);
   --radius: 0.75rem;
+  --nav-rail-width: 3rem;
+  --side-panel-width: 15rem;
+  --status-running: oklch(0.55 0.18 145);
+  --status-idle: oklch(0.75 0.16 75);
+  --status-error: oklch(0.60 0.23 27);
   --sidebar: oklch(0.97 0.005 80);
   --sidebar-foreground: oklch(0.17 0.02 55);
   --sidebar-primary: oklch(0.62 0.19 38);

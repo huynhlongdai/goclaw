@@ -3,12 +3,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function CardSkeleton() {
   return (
-    <div className="rounded-lg border p-4">
-      <Skeleton className="mb-2 h-5 w-3/4" />
-      <Skeleton className="mb-4 h-4 w-1/2" />
-      <div className="flex gap-2">
-        <Skeleton className="h-5 w-16" />
-        <Skeleton className="h-5 w-16" />
+    <div className="rounded-xl border p-4 space-y-3">
+      {/* Avatar + name row */}
+      <div className="flex items-start gap-3">
+        <div className="relative shrink-0">
+          <Skeleton className="h-10 w-10 rounded-xl" />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-muted ring-2 ring-card" />
+        </div>
+        <div className="flex-1 space-y-1.5 pt-0.5">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/3" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      </div>
+      {/* Excerpt */}
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-5/6" />
+      {/* Badges */}
+      <div className="flex gap-1.5">
+        <Skeleton className="h-5 w-16 rounded-full" />
+        <Skeleton className="h-5 w-14 rounded-full" />
       </div>
     </div>
   );

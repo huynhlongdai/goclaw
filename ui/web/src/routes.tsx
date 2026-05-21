@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router";
-import { AppLayout } from "@/components/layout/app-layout";
+import { AppShell } from "@/components/layout/app-shell";
 import { RequireAuth } from "@/components/shared/require-auth";
 import { RequireAdmin, RequireCrossTenant } from "@/components/shared/require-role";
 import { RequireSetup } from "@/components/shared/require-setup";
@@ -154,7 +154,7 @@ export function AppRoutes() {
           element={
             <RequireAuth>
               <RequireSetup>
-                <AppLayout />
+                <AppShell />
               </RequireSetup>
             </RequireAuth>
           }

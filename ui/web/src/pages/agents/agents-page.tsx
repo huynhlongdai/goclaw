@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router";
+import { motion } from "framer-motion";
 import { Plus, Bot, LayoutGrid, List, ArrowLeftRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/page-header";
@@ -207,17 +208,29 @@ export function AgentsPage() {
           <>
             <TooltipProvider>
               {viewMode === "card" ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <motion.div
+                  className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.045 } } }}
+                >
                   {pageItems.map((agent) => (
-                    <AgentCard
+                    <motion.div
                       key={agent.id}
-                      agent={agent}
-                      onClick={() => handleClick(agent)}
-                      onResummon={() => handleResummon(agent)}
-                      onDelete={() => setDeleteTarget({ id: agent.id, name: agent.display_name || agent.agent_key })}
-                    />
+                      variants={{
+                        hidden: { opacity: 0, y: 12 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0, 0, 0.2, 1] } },
+                      }}
+                    >
+                      <AgentCard
+                        agent={agent}
+                        onClick={() => handleClick(agent)}
+                        onResummon={() => handleResummon(agent)}
+                        onDelete={() => setDeleteTarget({ id: agent.id, name: agent.display_name || agent.agent_key })}
+                      />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               ) : (
                 <div className="flex flex-col gap-2">
                   {pageItems.map((agent) => (

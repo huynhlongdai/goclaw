@@ -12,6 +12,7 @@ interface UiState {
   sidebarCollapsed: boolean;
   mobileSidebarOpen: boolean;
   pageSize: number; // global pagination page size preference
+  sidePanelCollapsed: boolean; // secondary contextual panel
 
   setTheme: (theme: Theme) => void;
   setLanguage: (language: Language) => void;
@@ -20,6 +21,8 @@ interface UiState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setMobileSidebarOpen: (open: boolean) => void;
   setPageSize: (size: number) => void;
+  setSidePanelCollapsed: (collapsed: boolean) => void;
+  toggleSidePanel: () => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -31,6 +34,7 @@ export const useUiStore = create<UiState>()(
       sidebarCollapsed: false,
       mobileSidebarOpen: false,
       pageSize: 20,
+      sidePanelCollapsed: false,
 
       setTheme: (theme) => {
         set({ theme });
@@ -56,6 +60,10 @@ export const useUiStore = create<UiState>()(
       setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
 
       setPageSize: (size) => set({ pageSize: size }),
+
+      setSidePanelCollapsed: (collapsed) => set({ sidePanelCollapsed: collapsed }),
+
+      toggleSidePanel: () => set({ sidePanelCollapsed: !get().sidePanelCollapsed }),
     }),
     {
       name: "goclaw:ui", // localStorage key
@@ -66,6 +74,7 @@ export const useUiStore = create<UiState>()(
         timezone: state.timezone,
         sidebarCollapsed: state.sidebarCollapsed,
         pageSize: state.pageSize,
+        sidePanelCollapsed: state.sidePanelCollapsed,
       }),
     }
   )

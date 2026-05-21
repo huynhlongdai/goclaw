@@ -26,49 +26,71 @@ export function AgentCard({ agent, onClick, onResummon, onDelete }: AgentCardPro
   // Show agent_key as subtitle only if there's a display_name and agent_key is meaningful
   const showSubtitle = agent.display_name && !UUID_RE.test(agent.agent_key);
 
+  const isActive = agent.status === "active";
+  const isSummoning = agent.status === "summoning";
+  const isFailed = agent.status === "summon_failed";
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex cursor-pointer flex-col gap-3 rounded-lg border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-md"
+      className={cn(
+        "group flex cursor-pointer flex-col gap-3 rounded-xl border bg-card p-4 text-left",
+        "transition-all duration-150 hover:shadow-md",
+        isActive
+          ? "border-primary/20 hover:border-primary/40 hover:shadow-primary/5"
+          : "hover:border-border/80",
+      )}
     >
-      {/* Top row: icon + name + status */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          {emoji ? <span className="text-lg leading-none">{emoji}</span> : <Bot className="h-4.5 w-4.5" />}
+      {/* Top row: icon + name + status dot */}
+      <div className="flex items-start gap-3">
+        {/* Avatar with status dot */}
+        <div className="relative shrink-0">
+          <div className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-xl text-primary transition-colors",
+            isActive ? "bg-primary/15" : "bg-muted",
+          )}>
+            {emoji ? <span className="text-xl leading-none">{emoji}</span> : <Bot className="h-5 w-5" />}
+          </div>
+          {/* Status dot */}
+          <span className={cn(
+            "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-card",
+            isActive && "bg-green-500",
+            isSummoning && "bg-amber-400 animate-pulse",
+            isFailed && "bg-red-500",
+            !isActive && !isSummoning && !isFailed && "bg-muted-foreground/30",
+          )} />
         </div>
+
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-semibold">{displayName}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-semibold leading-tight">{displayName}</span>
             {agent.is_default && (
               <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
             )}
           </div>
           {showSubtitle && (
-            <div className="truncate text-xs text-muted-foreground">{agent.agent_key}</div>
+            <div className="mt-0.5 truncate text-xs text-muted-foreground">{agent.agent_key}</div>
+          )}
+          {/* Model info inline */}
+          {(agent.provider || agent.model) && (
+            <div className="mt-0.5 truncate text-xs text-muted-foreground/70">
+              {[agent.provider, agent.model].filter(Boolean).join(" · ")}
+            </div>
           )}
         </div>
-        {agent.status === "summoning" ? (
-          <Badge variant="outline" className="shrink-0 animate-pulse border-orange-400 text-orange-600 dark:text-orange-400">
+
+        {/* Status badge — compact */}
+        {isSummoning ? (
+          <Badge variant="outline" className="shrink-0 animate-pulse border-amber-400/50 text-amber-600 dark:text-amber-400 text-[10px] px-1.5">
             {t("card.summoning")}
           </Badge>
-        ) : agent.status === "summon_failed" ? (
-          <Badge variant="destructive" className="shrink-0">
+        ) : isFailed ? (
+          <Badge variant="destructive" className="shrink-0 text-[10px] px-1.5">
             {t("card.summonFailed")}
           </Badge>
-        ) : (
-          <Badge variant={agent.status === "active" ? "success" : "secondary"} className="shrink-0">
-            {agent.status}
-          </Badge>
-        )}
+        ) : null}
       </div>
-
-      {/* Model info */}
-      {(agent.provider || agent.model) && (
-        <div className="truncate text-xs text-muted-foreground">
-          {[agent.provider, agent.model].filter(Boolean).join(" / ")}
-        </div>
-      )}
 
       {/* Expertise summary */}
       {agent.frontmatter && (
