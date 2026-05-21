@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ArrowLeft, Bot, Eye, Heart, Settings, Sparkles, Star, Trash2, Terminal, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router";
 import { ROUTES } from "@/lib/constants";
+import { Breadcrumb } from "@/components/shared/breadcrumb";
 import { useTranslation } from "react-i18next";
 import type { AgentData } from "@/types/agent";
 import type { HeartbeatConfig } from "@/pages/agents/hooks/use-agent-heartbeat";
@@ -47,6 +48,7 @@ export function AgentHeader({ agent, heartbeat, onBack, onDelete, onAdvanced, on
         <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 size-9">
           <ArrowLeft className="h-4 w-4" />
         </Button>
+        <Breadcrumb items={[{ label: "Agents", href: ROUTES.AGENTS }, { label: title }]} className="hidden sm:flex" />
 
         {/* Emoji avatar */}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-12 sm:w-12">

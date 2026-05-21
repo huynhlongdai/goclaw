@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Trash2, RotateCcw, Eye, Pencil, Check, X } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/breadcrumb";
+import { ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageBubble } from "@/components/chat/message-bubble";
@@ -137,6 +139,13 @@ export function SessionDetailPage({
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
+          <Breadcrumb
+            items={[
+              { label: "Sessions", href: ROUTES.SESSIONS },
+              { label: session.metadata?.chat_title || session.label || session.key.slice(0, 20) },
+            ]}
+            className="hidden sm:flex"
+          />
           <div>
             {editingTitle ? (
               <div className="flex items-center gap-1">
