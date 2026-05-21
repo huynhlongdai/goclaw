@@ -67,7 +67,7 @@ export function ChatInput({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
         e.preventDefault();
         handleSend();
       }
@@ -108,149 +108,143 @@ export function ChatInput({
 
   return (
     <div
-      className="mx-3 mb-3 safe-bottom"
-      style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + var(--keyboard-height, 0px))` }}
+      className="px-4 pb-4 safe-bottom"
+      style={{ paddingBottom: `calc(max(1rem, env(safe-area-inset-bottom)) + var(--keyboard-height, 0px))` }}
     >
-      {/* Attached files preview */}
+      {/* File chips above input */}
       {files.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-2">
+        <div className="flex flex-wrap gap-1.5 mb-2 px-1">
           {files.map((af, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs"
+              className="inline-flex items-center gap-1.5 rounded-full bg-muted border px-2.5 py-1 text-xs"
             >
-              <span className="max-w-[150px] truncate">{af.file.name}</span>
+              <span className="max-w-[140px] truncate">{af.file.name}</span>
               <button
                 type="button"
                 onClick={() => removeFile(i)}
-                className="rounded-sm p-0.5 hover:bg-accent"
+                className="rounded-full p-0.5 hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X className="h-3 w-3" />
+                <X className="h-2.5 w-2.5" />
               </button>
             </span>
           ))}
         </div>
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
 
-      {/* Input container — attach + textarea + send/stop inside one rounded box.
-          items-end aligns icons with bottom of textarea when multi-line; single-line stays tight because textarea auto-sizes via useLayoutEffect above. */}
-      <div className="flex items-end rounded-xl border bg-background/95 backdrop-blur-sm shadow-sm transition-colors focus-within:ring-1 focus-within:ring-ring">
-        {/* Attach button inside input */}
-        <button
-          type="button"
-          onClick={handleFileSelect}
-          disabled={disabled || isBusy || voiceRecorder.isRecording}
-          title={t("attachFile")}
-          className="shrink-0 py-3 pl-3 pr-1 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 cursor-pointer"
-        >
-          <Paperclip className="h-4 w-4" />
-        </button>
+      {/* Floating input container */}
+      <div className="rounded-2xl border bg-card/95 backdrop-blur-sm shadow-md transition-shadow focus-within:shadow-lg focus-within:ring-1 focus-within:ring-ring/50">
 
-        {/* Voice record button - hidden when recording */}
-        {!voiceRecorder.isRecording && (
-          <button
-            type="button"
-            onClick={handleVoiceToggle}
-            disabled={disabled || isBusy}
-            title={t("recordVoice")}
-            className="shrink-0 py-3 pl-1 pr-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-40"
-          >
-            <Mic className="h-4 w-4" />
-          </button>
-        )}
-
-        {/* Textarea or Recording indicator */}
-        {voiceRecorder.isRecording ? (
-          <div className="flex-1 flex items-center gap-3 py-3 px-2">
-            {/* Waveform animation */}
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <span
-                  key={i}
-                  className="w-1 bg-destructive rounded-full animate-pulse"
-                  style={{
-                    height: `${12 + Math.sin(i * 0.8) * 8}px`,
-                    animationDelay: `${i * 0.1}s`,
-                  }}
-                />
-              ))}
-            </div>
-            <span className="text-sm font-medium tabular-nums">
-              {formatDuration(voiceRecorder.duration)}
-            </span>
-          </div>
-        ) : (
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onInput={handleInput}
-            placeholder={t("sendMessage")}
-            disabled={disabled}
-            rows={1}
-            className="flex-1 resize-none bg-transparent py-3 px-0 text-base md:text-sm placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
-          />
-        )}
-
-        {/* Send / Stop / Recording buttons */}
-        <div className="shrink-0 p-2 flex items-center gap-1">
+        {/* Textarea row */}
+        <div className="flex items-end px-4 pt-3 pb-1">
           {voiceRecorder.isRecording ? (
-            <>
-              <button
-                type="button"
-                onClick={handleCancelRecording}
-                title={t("cancelRecording")}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleVoiceToggle}
-                title={t("stopRecording")}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-              >
-                <Square className="h-3.5 w-3.5" />
-              </button>
-            </>
+            <div className="flex flex-1 items-center gap-3 py-1">
+              <div className="flex items-end gap-0.5">
+                {[...Array(6)].map((_, i) => (
+                  <span
+                    key={i}
+                    className="w-[3px] rounded-full bg-destructive animate-pulse"
+                    style={{ height: `${10 + Math.sin(i * 1.2) * 8}px`, animationDelay: `${i * 0.08}s` }}
+                  />
+                ))}
+              </div>
+              <span className="text-sm font-mono text-destructive">{formatDuration(voiceRecorder.duration)}</span>
+              <span className="text-xs text-muted-foreground">Đang ghi âm…</span>
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onInput={handleInput}
+              placeholder={t("sendMessage")}
+              disabled={disabled}
+              rows={1}
+              className="flex-1 resize-none bg-transparent text-sm placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-50 max-h-[200px]"
+            />
+          )}
+        </div>
+
+        {/* Bottom toolbar */}
+        <div className="flex items-center gap-1 px-3 pb-2.5">
+          {/* Left: attach + voice */}
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={handleFileSelect}
+              disabled={disabled || isBusy || voiceRecorder.isRecording}
+              title={t("attachFile")}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={voiceRecorder.isRecording ? handleCancelRecording : handleVoiceToggle}
+              disabled={disabled || isBusy && !voiceRecorder.isRecording}
+              title={voiceRecorder.isRecording ? t("cancelRecording") : t("recordVoice")}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                voiceRecorder.isRecording
+                  ? "text-destructive hover:bg-destructive/10"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              }`}
+            >
+              {voiceRecorder.isRecording ? <X className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Right: hint + send/stop */}
+          {!voiceRecorder.isRecording && !isBusy && (
+            <span className="hidden sm:block text-[11px] text-muted-foreground/40 mr-2">
+              Enter để gửi · Shift+Enter xuống dòng
+            </span>
+          )}
+
+          {voiceRecorder.isRecording ? (
+            <button
+              type="button"
+              onClick={handleVoiceToggle}
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              title={t("stopRecording")}
+            >
+              <Square className="h-3.5 w-3.5" />
+            </button>
           ) : isBusy ? (
-            <>
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={!value.trim() || disabled}
-                title={t("sendFollowUp")}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <Send className="h-4 w-4" />
-              </button>
+            <div className="flex items-center gap-1">
+              {value.trim() && (
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={disabled}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+                  title={t("sendFollowUp")}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onAbort}
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors border border-destructive/20"
                 title={t("stopGeneration")}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
               >
                 <Square className="h-3.5 w-3.5" />
               </button>
-            </>
+            </div>
           ) : (
             <button
               type="button"
               onClick={handleSend}
               disabled={!hasContent || disabled}
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
               title={t("sendMessageTitle")}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </button>
           )}
         </div>

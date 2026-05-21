@@ -82,65 +82,80 @@ export function ChatTopBar({ agentId, isRunning, isBusy, activity, teamTasks, on
   })();
 
   return (
-    <div className="flex items-center justify-between border-b px-4 py-1.5">
-      <div className="flex items-center gap-2">
-        {emoji ? (
-          <span className="text-base">{emoji}</span>
-        ) : (
-          <Bot className="h-4 w-4 text-muted-foreground" />
-        )}
-        <span className="text-sm font-semibold">{displayName}</span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {usage && (
-          <div
-            className={`hidden sm:flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] ${usage.color}`}
-            title={t("contextUsage.tooltip", {
-              used: usage.used.toLocaleString(),
-              max: usage.max.toLocaleString(),
-              percent: usage.percent,
-              compactions: session?.compactionCount ?? 0,
-              lastCompact: lastCompaction ? lastCompaction.toLocaleString() : t("contextUsage.never"),
-            })}
-          >
-            <span className="font-mono">
-              {usage.used.toLocaleString()}/{usage.max.toLocaleString()}
+    <div className="border-b">
+      <div className="flex items-center justify-between px-4 py-2">
+        {/* Agent info */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-muted text-base">
+            {emoji ?? <Bot className="h-3.5 w-3.5 text-muted-foreground" />}
+          </div>
+          <span className="truncate text-sm font-semibold">{displayName}</span>
+          {/* Status pill */}
+          {isRunning ? (
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:text-blue-400">
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              {activity ? phaseLabels[activity.phase] : "Running"}
             </span>
-            <span className="opacity-70">({usage.percent}%)</span>
-          </div>
-        )}
-        {isRunning ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>{activity ? phaseLabels[activity.phase] : "Running…"}</span>
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          </div>
-        ) : isBusy ? (
-          <button
-            type="button"
-            onClick={onToggleTaskPanel}
-            className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span>Team: {teamTasks.length} task{teamTasks.length > 1 ? "s" : ""} active</span>
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          </button>
-        ) : (
-          <span className="text-xs text-muted-foreground/50">Ready</span>
-        )}
+          ) : isBusy ? (
+            <button
+              type="button"
+              onClick={onToggleTaskPanel}
+              className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+            >
+              <Users className="h-2.5 w-2.5" />
+              Team · {teamTasks.length}
+            </button>
+          ) : (
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              Ready
+            </span>
+          )}
+        </div>
 
-        {/* Task panel toggle — visible when there are (or recently were) team tasks */}
-        {teamTasks.length > 0 && (
-          <button
-            type="button"
-            onClick={onToggleTaskPanel}
-            className="relative rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            title={taskPanelOpen ? "Close task panel" : "Open task panel"}
-          >
-            <PanelIcon className="h-4 w-4" />
-          </button>
-        )}
+        {/* Right actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {usage && (
+            <div
+              className={`hidden md:flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-mono ${usage.color}`}
+              title={t("contextUsage.tooltip", {
+                used: usage.used.toLocaleString(),
+                max: usage.max.toLocaleString(),
+                percent: usage.percent,
+                compactions: session?.compactionCount ?? 0,
+                lastCompact: lastCompaction ? lastCompaction.toLocaleString() : t("contextUsage.never"),
+              })}
+            >
+              {usage.percent}%
+            </div>
+          )}
+          {teamTasks.length > 0 && (
+            <button
+              type="button"
+              onClick={onToggleTaskPanel}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              title={taskPanelOpen ? "Đóng task panel" : "Mở task panel"}
+            >
+              <PanelIcon className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Context usage progress bar */}
+      {usage && (
+        <div
+          className="h-0.5 bg-muted"
+          title={`${usage.used.toLocaleString()} / ${usage.max.toLocaleString()} tokens`}
+        >
+          <div
+            className={`h-full transition-all duration-500 ${
+              usage.percent >= 90 ? "bg-destructive" : usage.percent >= 75 ? "bg-amber-500" : "bg-primary/40"
+            }`}
+            style={{ width: `${usage.percent}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }

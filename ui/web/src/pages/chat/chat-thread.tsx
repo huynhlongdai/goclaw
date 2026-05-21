@@ -1,6 +1,6 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bot } from "lucide-react";
+import { Bot, ChevronDown } from "lucide-react";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { ActiveRunZone } from "@/components/chat/active-run-zone";
 import { SystemNotification } from "@/components/chat/system-notification";
@@ -79,11 +79,22 @@ export const ChatThread = memo(function ChatThread({
   activity, teamTasks, isRunning, isBusy, loading, scrollTrigger = 0, onToggleTaskPanel,
 }: ChatThreadProps) {
   const { t } = useTranslation("chat");
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const { ref, onScroll } = useAutoScroll<HTMLDivElement>(
     [messages.length, streamText, thinkingText, toolStream.length],
     100,
     scrollTrigger,
   );
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    onScroll();
+    const el = e.currentTarget;
+    setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 150);
+  };
+
+  const scrollToBottom = () => {
+    ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" });
+  };
 
   const displayItems = useMemo(() => buildDisplayItems(messages), [messages]);
 
@@ -132,47 +143,62 @@ export const ChatThread = memo(function ChatThread({
       );
     }
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-        <p className="text-lg font-medium">{t("empty.title")}</p>
-        <p className="text-sm">{t("empty.description")}</p>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center px-6">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-3xl">
+          <Bot className="h-8 w-8 text-muted-foreground/50" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-base font-semibold text-foreground/80">{t("empty.title")}</p>
+          <p className="text-sm text-muted-foreground">{t("empty.description")}</p>
+        </div>
       </div>
     );
   }
 
   return (
     <ChatImageGalleryProvider images={allImages}>
-      <div
-        ref={ref}
-        onScroll={onScroll}
-        className="flex-1 overflow-y-auto overscroll-contain px-4 py-4"
-        style={{
-          backgroundImage: "radial-gradient(circle, var(--color-border) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
-      >
-        <div className="mx-auto max-w-3xl space-y-3">
-          {displayItems.map((item) => {
-            switch (item.kind) {
-              case "notification":
-                return <SystemNotification key={`notif-${item.idx}`} message={item.msg} />;
-              case "message":
-                return <MessageBubble key={`msg-${item.idx}`} message={item.msg} />;
-              case "merged-tools":
-                return <MergedToolGroup key={`tools-${item.idx}`} msgs={item.msgs} />;
-            }
-          })}
+      <div className="relative flex-1 min-h-0">
+        <div
+          ref={ref}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto overscroll-contain px-4 py-6"
+        >
+          <div className="mx-auto max-w-3xl space-y-4">
+            {displayItems.map((item) => {
+              switch (item.kind) {
+                case "notification":
+                  return <SystemNotification key={`notif-${item.idx}`} message={item.msg} />;
+                case "message":
+                  return <MessageBubble key={`msg-${item.idx}`} message={item.msg} />;
+                case "merged-tools":
+                  return <MergedToolGroup key={`tools-${item.idx}`} msgs={item.msgs} />;
+              }
+            })}
 
-          {teamTasks.length > 0 && <TeamActivityPanel tasks={teamTasks} onTogglePanel={onToggleTaskPanel} />}
+            {teamTasks.length > 0 && <TeamActivityPanel tasks={teamTasks} onTogglePanel={onToggleTaskPanel} />}
 
-          <ActiveRunZone
-            isRunning={isRunning}
-            activity={activity}
-            thinkingText={thinkingText}
-            streamText={streamText}
-            toolStream={toolStream}
-            blockReplies={blockReplies}
-          />
+            <ActiveRunZone
+              isRunning={isRunning}
+              activity={activity}
+              thinkingText={thinkingText}
+              streamText={streamText}
+              toolStream={toolStream}
+              blockReplies={blockReplies}
+            />
+          </div>
         </div>
+
+        {/* Scroll-to-bottom button */}
+        {showScrollBtn && (
+          <button
+            type="button"
+            onClick={scrollToBottom}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full border bg-card/95 backdrop-blur-sm px-3 py-1.5 text-xs text-muted-foreground shadow-md hover:bg-accent hover:text-accent-foreground transition-colors animate-in fade-in-0 slide-in-from-bottom-2 duration-150"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+            Cuộn xuống
+          </button>
+        )}
       </div>
     </ChatImageGalleryProvider>
   );
