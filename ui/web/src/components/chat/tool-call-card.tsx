@@ -1,14 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Wrench, AlertTriangle, ChevronRight, Zap } from "lucide-react";
+import { Wrench, AlertTriangle, ChevronRight, Zap, Bot, ExternalLink } from "lucide-react";
+import { ROUTES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import type { ToolStreamEntry } from "@/types/chat";
 
 const isSkillTool = (name: string) => name === "use_skill";
+const isAgentManageTool = (name: string) => name === "agent_manage";
 
 /** Build a short summary string from tool arguments for inline display. */
 function buildToolSummary(entry: ToolStreamEntry): string | null {
   if (!entry.arguments) return null;
   const args = entry.arguments;
+  if (isAgentManageTool(entry.name)) {
+    const action = args.action as string;
+    const key = (args.agent_key ?? args.display_name) as string | undefined;
+    return key ? `${action}: ${key}` : action;
+  }
   const key = args.path ?? args.command ?? args.query ?? args.url ?? args.name;
   if (typeof key === "string") return key.length > 80 ? key.slice(0, 77) + "..." : key;
   return null;
@@ -64,9 +73,14 @@ export function ToolCallCard({ entry, compact }: ToolCallCardProps) {
           {entry.result && (
             <div>
               <div className="text-2xs font-semibold uppercase text-muted-foreground mb-0.5">{t("toolResult")}</div>
-              <pre className="whitespace-pre-wrap text-xs-plus font-mono bg-background rounded p-1.5 max-h-40 overflow-y-auto">
-                {entry.result}
-              </pre>
+              {isAgentManageTool(entry.name)
+                ? <AgentManageResult result={entry.result} />
+                : (
+                  <pre className="whitespace-pre-wrap text-xs-plus font-mono bg-background rounded p-1.5 max-h-40 overflow-y-auto">
+                    {entry.result}
+                  </pre>
+                )
+              }
             </div>
           )}
         </div>
@@ -104,4 +118,105 @@ function PhaseLabel({ phase, isSkill }: { phase: ToolStreamEntry["phase"]; isSki
     error: "text-red-500",
   };
   return <span className={`text-xs-plus ${colors[phase] ?? "text-muted-foreground"}`}>{labels[phase] ?? phase}</span>;
+}
+
+interface AgentRow {
+  agent_key: string;
+  display_name?: string;
+  emoji?: string;
+  model?: string;
+  provider?: string;
+  status?: string;
+  is_default?: boolean;
+}
+
+/** Rich result renderer for the agent_manage tool — shows agent cards or operation summary. */
+function AgentManageResult({ result }: { result: string }) {
+  const navigate = useNavigate();
+  let parsed: unknown;
+  try { parsed = JSON.parse(result); } catch { /* non-JSON, fall through */ }
+
+  // List of agents
+  if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0] as AgentRow).agent_key) {
+    const rows = parsed as AgentRow[];
+    return (
+      <div className="space-y-1 max-h-48 overflow-y-auto">
+        {rows.map((a) => (
+          <button
+            key={a.agent_key}
+            type="button"
+            onClick={() => navigate(`${ROUTES.AGENTS}`)}
+            className="flex w-full items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-left hover:border-primary/30 hover:bg-accent transition-colors"
+          >
+            <span className="text-base">{a.emoji ?? "🤖"}</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium truncate">{a.display_name ?? a.agent_key}</div>
+              <div className="text-[10px] text-muted-foreground font-mono truncate">{a.agent_key} · {a.model?.split("/").pop()}</div>
+            </div>
+            <span className={cn(
+              "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+              a.status === "active" ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-muted text-muted-foreground"
+            )}>
+              {a.status ?? "active"}
+            </span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // Single agent result (describe / create / update)
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const obj = parsed as Record<string, unknown>;
+    if (obj.message) {
+      return (
+        <div className="rounded-lg border bg-card px-3 py-2 text-xs">
+          {!!obj.agent_key && (
+            <div className="flex items-center gap-2 mb-1.5">
+              <Bot className="h-3.5 w-3.5 text-primary" />
+              <span className="font-mono font-medium text-primary">{String(obj.agent_key)}</span>
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.AGENTS)}
+                className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          <p className="text-muted-foreground">{String(obj.message)}</p>
+        </div>
+      );
+    }
+    // Describe output
+    if (obj.agent_key && obj.model) {
+      return (
+        <div className="rounded-lg border bg-card px-3 py-2 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{(obj.emoji as string) ?? "🤖"}</span>
+            <div>
+              <div className="text-xs font-semibold">{(obj.display_name as string) ?? (obj.agent_key as string)}</div>
+              <div className="text-[10px] font-mono text-muted-foreground">{obj.agent_key as string}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.AGENTS)}
+              className="ml-auto text-muted-foreground hover:text-foreground"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          </div>
+          {!!obj.agent_description && <p className="text-[11px] text-muted-foreground">{String(obj.agent_description)}</p>}
+          <div className="text-[10px] text-muted-foreground font-mono">{String(obj.provider)} / {String(obj.model).split("/").pop()}</div>
+        </div>
+      );
+    }
+  }
+
+  // Fallback: raw JSON
+  return (
+    <pre className="whitespace-pre-wrap text-xs-plus font-mono bg-background rounded p-1.5 max-h-40 overflow-y-auto">
+      {result}
+    </pre>
+  );
 }
