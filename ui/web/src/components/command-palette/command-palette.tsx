@@ -14,7 +14,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ROUTES } from "@/lib/constants";
 import { useUiStore } from "@/stores/use-ui-store";
 import { useAuthStore } from "@/stores/use-auth-store";
+import { useHttp } from "@/hooks/use-ws";
 import { cn } from "@/lib/utils";
+import type { AgentData } from "@/types/agent";
 
 type CommandItem = {
   id: string;
@@ -25,6 +27,41 @@ type CommandItem = {
   keywords?: string[];
   action: () => void;
 };
+
+/** Dynamic agent search — returns agents matching query as CommandItems */
+function useAgentSearch(query: string): CommandItem[] {
+  const navigate = useNavigate();
+  const http = useHttp();
+  const connected = useAuthStore((s) => s.connected);
+  const [results, setResults] = useState<AgentData[]>([]);
+
+  useEffect(() => {
+    if (!connected || query.length < 2) { setResults([]); return; }
+    let cancelled = false;
+    http.get<{ agents: AgentData[] }>("/v1/agents")
+      .then((res) => {
+        if (cancelled) return;
+        const q = query.toLowerCase();
+        const matches = (res.agents ?? []).filter((a) =>
+          a.status === "active" &&
+          (a.agent_key.includes(q) || (a.display_name ?? "").toLowerCase().includes(q))
+        ).slice(0, 5);
+        setResults(matches);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [http, connected, query]);
+
+  return useMemo(() => results.map((a): CommandItem => ({
+    id: `agent:${a.agent_key}`,
+    label: a.display_name || a.agent_key,
+    description: `${a.provider} / ${a.model}`,
+    icon: Bot,
+    group: "Agents",
+    keywords: [a.agent_key],
+    action: () => navigate(`/agents/${a.id}`),
+  })), [results, navigate]);
+}
 
 function useCommandItems(): CommandItem[] {
   const navigate = useNavigate();
@@ -126,7 +163,10 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const allItems = useCommandItems();
+  const staticItems = useCommandItems();
+  const dynamicAgents = useAgentSearch(query);
+
+  const allItems = useMemo(() => [...staticItems, ...dynamicAgents], [staticItems, dynamicAgents]);
 
   const filtered = useMemo(() => {
     const scored = allItems
