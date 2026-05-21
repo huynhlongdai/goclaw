@@ -172,62 +172,64 @@ export const ChatThread = memo(function ChatThread({
     const prompts = starterPrompts.length > 0 ? starterPrompts : defaultPrompts;
 
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-10 text-center animate-in fade-in-0 duration-300">
-        {/* Agent avatar */}
-        <div className="flex flex-col items-center gap-3">
-          <div className={`flex h-20 w-20 items-center justify-center rounded-2xl border-2 bg-gradient-to-br shadow-sm text-4xl ${
-            isCommandAgent
-              ? "border-violet-500/30 from-violet-500/10 to-violet-500/5"
-              : "border-border/60 from-muted/80 to-muted"
-          }`}>
-            {agent?.emoji
-              ? <span>{agent.emoji}</span>
-              : isCommandAgent
-              ? <Terminal className="h-10 w-10 text-violet-500/70" />
-              : <Bot className="h-10 w-10 text-muted-foreground/60" />
-            }
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-center gap-2">
-              <h2 className="text-lg font-bold">{agent?.display_name ?? t("empty.title")}</h2>
-              {isCommandAgent && (
-                <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-600 dark:text-violet-400">CAO</span>
+      <div className="flex flex-1 flex-col items-center justify-start overflow-y-auto px-6 py-8 text-center animate-in fade-in-0 duration-300">
+        <div className="flex w-full max-w-xl flex-col items-center gap-4">
+          {/* Agent avatar — compact */}
+          <div className="flex flex-col items-center gap-2">
+            <div className={`flex h-14 w-14 items-center justify-center rounded-xl border-2 bg-gradient-to-br shadow-sm text-3xl ${
+              isCommandAgent
+                ? "border-violet-500/30 from-violet-500/10 to-violet-500/5"
+                : "border-border/60 from-muted/80 to-muted"
+            }`}>
+              {agent?.emoji
+                ? <span>{agent.emoji}</span>
+                : isCommandAgent
+                ? <Terminal className="h-7 w-7 text-violet-500/70" />
+                : <Bot className="h-7 w-7 text-muted-foreground/60" />
+              }
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-center gap-2">
+                <h2 className="text-base font-bold">{agent?.display_name ?? t("empty.title")}</h2>
+                {isCommandAgent && (
+                  <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-600 dark:text-violet-400">CAO</span>
+                )}
+              </div>
+              {agent?.agent_description && (
+                <p className="max-w-xs text-xs text-muted-foreground line-clamp-3">{agent.agent_description}</p>
+              )}
+              {!agent?.agent_description && isCommandAgent && (
+                <p className="max-w-xs text-xs text-muted-foreground">Quản lý và điều phối toàn bộ hệ thống agents của bạn.</p>
+              )}
+              {agent?.model && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  {agent.model.split("/").pop() ?? agent.model}
+                </span>
               )}
             </div>
-            {agent?.agent_description && (
-              <p className="max-w-sm text-sm text-muted-foreground">{agent.agent_description}</p>
-            )}
-            {!agent?.agent_description && isCommandAgent && (
-              <p className="max-w-sm text-sm text-muted-foreground">Quản lý và điều phối toàn bộ hệ thống agents của bạn.</p>
-            )}
-            {agent?.model && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
-                {agent.model.split("/").pop() ?? agent.model}
-              </span>
-            )}
           </div>
-        </div>
 
-        {/* Starter prompts grid */}
-        {onStarterPrompt && (
-          <div className="grid w-full max-w-xl grid-cols-2 gap-2">
-            {prompts.slice(0, 4).map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => onStarterPrompt(prompt)}
-                className={`rounded-xl border bg-card px-4 py-3 text-left text-sm transition-all hover:shadow-sm ${
-                  isCommandAgent
-                    ? "hover:border-violet-500/30 hover:bg-violet-500/5"
-                    : "hover:border-primary/40 hover:bg-accent"
-                }`}
-              >
-                <span className="line-clamp-2 text-foreground/80">{prompt}</span>
-              </button>
-            ))}
-          </div>
-        )}
+          {/* Starter prompts grid */}
+          {onStarterPrompt && (
+            <div className="grid w-full grid-cols-2 gap-2">
+              {prompts.slice(0, 4).map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => onStarterPrompt(prompt)}
+                  className={`rounded-xl border bg-card px-3 py-2.5 text-left text-xs transition-all hover:shadow-sm ${
+                    isCommandAgent
+                      ? "hover:border-violet-500/30 hover:bg-violet-500/5"
+                      : "hover:border-primary/40 hover:bg-accent"
+                  }`}
+                >
+                  <span className="line-clamp-2 text-foreground/80">{prompt}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
