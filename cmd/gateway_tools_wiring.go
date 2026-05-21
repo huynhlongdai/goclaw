@@ -41,6 +41,12 @@ func wireExtraTools(
 	toolsReg.Register(heartbeatTool)
 	slog.Info("heartbeat tool registered")
 
+	// Agent management tool — lets privileged agents (CAO) manage tenant agents.
+	if pgStores.Agents != nil {
+		toolsReg.Register(tools.NewAgentManageTool(pgStores.Agents))
+		slog.Info("agent_manage tool registered")
+	}
+
 	// Session tools (list, status, history, send)
 	toolsReg.Register(tools.NewSessionsListTool())
 	toolsReg.Register(tools.NewSessionStatusTool())
