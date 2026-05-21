@@ -1,4 +1,4 @@
-import { Bot, Star, RotateCcw, Trash2, Sparkles } from "lucide-react";
+import { Bot, Star, RotateCcw, Trash2, Sparkles, Terminal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export function AgentCard({ agent, onClick, onResummon, onDelete }: AgentCardPro
   const { t } = useTranslation("agents");
   const displayName = agentDisplayName(agent, t("card.unnamedAgent"));
   const selfEvolve = agent.agent_type === "predefined" && Boolean(agent.self_evolve);
+  const isCommand = agent.agent_type === "command";
   const emoji = agent.emoji ?? "";
   const hasOAuthRouting = hasActiveChatGPTOAuthRouting(agent.chatgpt_oauth_routing);
   const promptMode = readPromptMode(agent);
@@ -50,7 +51,7 @@ export function AgentCard({ agent, onClick, onResummon, onDelete }: AgentCardPro
             "flex h-10 w-10 items-center justify-center rounded-xl text-primary transition-colors",
             isActive ? "bg-primary/15" : "bg-muted",
           )}>
-            {emoji ? <span className="text-xl leading-none">{emoji}</span> : <Bot className="h-5 w-5" />}
+            {emoji ? <span className="text-xl leading-none">{emoji}</span> : isCommand ? <Terminal className="h-5 w-5 text-violet-500" /> : <Bot className="h-5 w-5" />}
           </div>
           {/* Status dot */}
           <span className={cn(
@@ -67,6 +68,9 @@ export function AgentCard({ agent, onClick, onResummon, onDelete }: AgentCardPro
             <span className="truncate text-sm font-semibold leading-tight">{displayName}</span>
             {agent.is_default && (
               <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
+            )}
+            {isCommand && (
+              <span className="shrink-0 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400">CAO</span>
             )}
           </div>
           {showSubtitle && (

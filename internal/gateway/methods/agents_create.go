@@ -67,7 +67,10 @@ func (m *AgentsMethods) handleCreate(ctx context.Context, client *gateway.Client
 	}
 
 	agentType := params.AgentType
-	if agentType == "" || agentType == store.AgentTypeOpen {
+	switch agentType {
+	case store.AgentTypePredefined, store.AgentTypeCommand:
+		// accepted as-is
+	default:
 		agentType = store.AgentTypePredefined // v3: open agents deprecated, default to predefined
 	}
 

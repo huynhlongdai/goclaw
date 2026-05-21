@@ -68,6 +68,11 @@ func (t *AgentManageTool) Parameters() map[string]any {
 				"type":        "string",
 				"description": "Model identifier (e.g. gpt-4o, claude-3-5-sonnet-20241022). Required for create.",
 			},
+			"agent_type": map[string]any{
+				"type":        "string",
+				"enum":        []string{"open", "predefined", "command"},
+				"description": "Agent type. 'command' creates a Command Agent Orchestrator (CAO). Defaults to 'predefined' for new agents.",
+			},
 			"status": map[string]any{
 				"type":        "string",
 				"enum":        []string{"active", "inactive"},
@@ -199,18 +204,26 @@ func (t *AgentManageTool) execCreate(ctx context.Context, args map[string]any) *
 	description, _ := args["agent_description"].(string)
 	frontmatter, _ := args["frontmatter"].(string)
 
+	agentType := store.AgentTypePredefined
+	if v, ok := args["agent_type"].(string); ok {
+		switch v {
+		case store.AgentTypeCommand, store.AgentTypeOpen, store.AgentTypePredefined:
+			agentType = v
+		}
+	}
+
 	ag := &store.AgentData{
-		AgentKey:         agentKey,
-		DisplayName:      displayName,
-		Emoji:            emoji,
-		AgentDescription: description,
-		Frontmatter:      frontmatter,
-		Provider:         provider,
-		Model:            model,
-		OwnerID:          ownerID,
-		Status:           "active",
-		AgentType:        "open",
-		ContextWindow:    131072,
+		AgentKey:          agentKey,
+		DisplayName:       displayName,
+		Emoji:             emoji,
+		AgentDescription:  description,
+		Frontmatter:       frontmatter,
+		Provider:          provider,
+		Model:             model,
+		OwnerID:           ownerID,
+		Status:            "active",
+		AgentType:         agentType,
+		ContextWindow:     131072,
 		MaxToolIterations: 30,
 	}
 
@@ -261,6 +274,12 @@ func (t *AgentManageTool) execUpdate(ctx context.Context, args map[string]any) *
 	}
 	if v, ok := args["status"].(string); ok && (v == "active" || v == "inactive") {
 		updates["status"] = v
+	}
+	if v, ok := args["agent_type"].(string); ok {
+		switch v {
+		case store.AgentTypeCommand, store.AgentTypeOpen, store.AgentTypePredefined:
+			updates["agent_type"] = v
+		}
 	}
 
 	if len(updates) == 0 {

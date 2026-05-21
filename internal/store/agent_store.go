@@ -30,6 +30,7 @@ func sanitizeToolCallPrefix(s string) string {
 const (
 	AgentTypeOpen       = "open"       // per-user context files, seeded on first chat
 	AgentTypePredefined = "predefined" // shared agent-level context files
+	AgentTypeCommand    = "command"    // Command Agent Orchestrator (CAO) — manages other agents
 )
 
 // Agent status constants.
