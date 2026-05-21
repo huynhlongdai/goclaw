@@ -38,6 +38,7 @@ import { useTenants } from "@/hooks/use-tenants";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { AppLogo } from "@/components/brand/app-logo";
+import { useBrandStore } from "@/stores/use-brand-store";
 import { AboutDialog } from "./about-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -171,14 +172,9 @@ export function NavRail({
 }: NavRailProps) {
   const { t } = useTranslation("sidebar");
   const navigate = useNavigate();
-  const theme = useUiStore((s) => s.theme);
-  const setTheme = useUiStore((s) => s.setTheme);
-  const isDark =
-    theme === "dark" ||
-    (theme === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
   const role = useAuthStore((s) => s.role);
   const isAdmin = role === "admin" || role === "owner";
+  const { showWorkModule, showTracesSection, showVaultSection } = useBrandStore();
 
   const handleDirect = (id: NavSectionId, route: string) => {
     onSectionClick(id);
@@ -236,12 +232,14 @@ export function NavRail({
           active={activeSectionId === "teams"}
           onClick={() => handleDirect("teams", ROUTES.TEAMS)}
         />
-        <RailItem
-          icon={KanbanSquare}
-          label="Work"
-          active={activeSectionId === "work"}
-          onClick={() => handleDirect("work", ROUTES.WORK_TASKS)}
-        />
+        {showWorkModule && (
+          <RailItem
+            icon={KanbanSquare}
+            label="Work"
+            active={activeSectionId === "work"}
+            onClick={() => handleDirect("work", ROUTES.WORK_TASKS)}
+          />
+        )}
 
         <div className="my-1.5 w-6 border-t border-sidebar-border/60" />
 
@@ -252,12 +250,14 @@ export function NavRail({
           active={activeSectionId === "capabilities"}
           onClick={() => onSectionClick("capabilities")}
         />
-        <RailItem
-          icon={Database}
-          label={t("groups.data")}
-          active={activeSectionId === "data"}
-          onClick={() => onSectionClick("data")}
-        />
+        {showVaultSection && (
+          <RailItem
+            icon={Database}
+            label={t("groups.data")}
+            active={activeSectionId === "data"}
+            onClick={() => onSectionClick("data")}
+          />
+        )}
         <RailItem
           icon={Radio}
           label={t("groups.connectivity")}
@@ -270,12 +270,14 @@ export function NavRail({
         <div className="flex-1" />
 
         {/* Bottom pinned */}
-        <RailItem
-          icon={Activity}
-          label={t("groups.monitoring")}
-          active={activeSectionId === "monitoring"}
-          onClick={() => onSectionClick("monitoring")}
-        />
+        {showTracesSection && (
+          <RailItem
+            icon={Activity}
+            label={t("groups.monitoring")}
+            active={activeSectionId === "monitoring"}
+            onClick={() => onSectionClick("monitoring")}
+          />
+        )}
         {isAdmin && (
           <RailItem
             icon={Settings}
@@ -287,25 +289,51 @@ export function NavRail({
 
         <div className="my-1.5 w-6 border-t border-sidebar-border/60" />
 
-        {/* Theme toggle */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-sidebar-foreground/50 transition-all duration-150 cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={10} className="text-xs">
-            {isDark ? "Light mode" : "Dark mode"}
-          </TooltipContent>
-        </Tooltip>
+        {/* Theme cycle: Default → Lumos → Obsidian */}
+        <ThemeCycleButton />
 
         {/* User menu */}
         <UserButton />
       </aside>
     </TooltipProvider>
+  );
+}
+
+const THEME_CYCLE: Array<{ id: import("@/stores/use-brand-store").ThemeId; label: string; icon: React.ElementType }> = [
+  { id: "default", label: "Default", icon: Sun },
+  { id: "lumos", label: "Lumos", icon: Sun },
+  { id: "obsidian", label: "Obsidian", icon: Moon },
+];
+
+function ThemeCycleButton() {
+  const { themeId, setTheme } = useBrandStore();
+  const { setTheme: setUiTheme } = useUiStore();
+  const idx = Math.max(0, THEME_CYCLE.findIndex((t) => t.id === themeId));
+  const current = THEME_CYCLE[idx] ?? THEME_CYCLE[0]!;
+  const nextIdx = (idx + 1) % THEME_CYCLE.length;
+  const next = THEME_CYCLE[nextIdx] ?? THEME_CYCLE[0]!;
+
+  const handleCycle = () => {
+    setTheme(next.id);
+    setUiTheme(next.id === "lumos" ? "light" : "dark");
+  };
+
+  const Icon = current.icon;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleCycle}
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-sidebar-foreground/50 transition-all duration-150 cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={10} className="text-xs">
+        Theme: <strong>{current.label}</strong> → {next.label}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
