@@ -1,6 +1,6 @@
 import { useEffect, useCallback, lazy, Suspense } from "react";
-import { Activity, Bot, DollarSign, Hash, Radio, AlertTriangle, KanbanSquare } from "lucide-react";
-import { Link } from "react-router";
+import { Activity, Bot, DollarSign, Hash, Radio, AlertTriangle, KanbanSquare, Terminal, Zap } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -286,6 +286,19 @@ export function OverviewPage() {
             <CronJobsCard jobs={cronData?.jobs ?? []} />
           </div>
 
+          {/* Active Agents mini-grid */}
+          {agents.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-foreground/80">Agents</h3>
+                <Link to={ROUTES.AGENTS} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Xem tất cả →
+                </Link>
+              </div>
+              <AgentsMiniGrid agents={agents} />
+            </div>
+          )}
+
           {/* Recent Requests */}
           <RecentRequestsCard traces={traces} />
 
@@ -301,6 +314,63 @@ export function OverviewPage() {
           </Suspense>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+interface AgentStatusItem {
+  id: string;
+  model?: string;
+  emoji?: string;
+  display_name?: string;
+  isRunning?: boolean;
+}
+
+function AgentsMiniGrid({ agents }: { agents: AgentStatusItem[] }) {
+  const navigate = useNavigate();
+  const shown = agents.slice(0, 12);
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {shown.map((a) => {
+        const isCommand = (a as unknown as { agent_type?: string }).agent_type === "command";
+        return (
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => navigate(`${ROUTES.AGENTS}/${a.id}`)}
+            className="flex items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 text-left hover:border-primary/30 hover:bg-accent transition-all group"
+          >
+            <div className="relative shrink-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-base">
+                {a.emoji
+                  ? <span className="leading-none">{a.emoji}</span>
+                  : isCommand
+                  ? <Terminal className="h-4 w-4 text-violet-500" />
+                  : <Bot className="h-4 w-4 text-muted-foreground" />}
+              </div>
+              <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-card ${
+                a.isRunning ? "bg-blue-500 animate-pulse" : "bg-green-500"
+              }`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1">
+                <span className="truncate text-xs font-medium">{a.display_name || a.id}</span>
+                {isCommand && <span className="shrink-0 rounded-full bg-violet-500/10 px-1 text-[9px] font-semibold text-violet-600 dark:text-violet-400">CAO</span>}
+              </div>
+              {a.isRunning && (
+                <div className="flex items-center gap-1 text-[10px] text-blue-500">
+                  <Zap className="h-2.5 w-2.5" />
+                  Running
+                </div>
+              )}
+              {!a.isRunning && a.model && (
+                <div className="truncate text-[10px] text-muted-foreground font-mono">{a.model.split("/").pop()}</div>
+              )}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
