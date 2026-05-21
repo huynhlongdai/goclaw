@@ -17,6 +17,8 @@ import { useAuthStore } from "@/stores/use-auth-store";
 import { useHttp } from "@/hooks/use-ws";
 import { cn } from "@/lib/utils";
 import type { AgentData } from "@/types/agent";
+import { useTasksStore } from "@/stores/use-tasks-store";
+import { KanbanSquare } from "lucide-react";
 
 type CommandItem = {
   id: string;
@@ -27,6 +29,30 @@ type CommandItem = {
   keywords?: string[];
   action: () => void;
 };
+
+/** Search local tasks from store — returns matching tasks as CommandItems */
+function useTaskSearch(query: string): CommandItem[] {
+  const navigate = useNavigate();
+  const { tasks } = useTasksStore();
+  return useMemo(() => {
+    if (query.length < 2) return [];
+    const q = query.toLowerCase();
+    return tasks
+      .filter((t) =>
+        t.status !== "done" && t.status !== "cancelled" &&
+        (t.title.toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q) || (t.tags ?? []).some((tag) => tag.includes(q)))
+      )
+      .slice(0, 5)
+      .map((t): CommandItem => ({
+        id: `task:${t.id}`,
+        label: t.title,
+        description: t.assignee_name ? `→ ${t.assignee_name}` : undefined,
+        icon: KanbanSquare,
+        group: "Tasks",
+        action: () => navigate(ROUTES.WORK_TASKS),
+      }));
+  }, [tasks, query, navigate]);
+}
 
 /** Dynamic agent search — returns agents matching query as CommandItems */
 function useAgentSearch(query: string): CommandItem[] {
@@ -165,8 +191,9 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const staticItems = useCommandItems();
   const dynamicAgents = useAgentSearch(query);
+  const dynamicTasks = useTaskSearch(query);
 
-  const allItems = useMemo(() => [...staticItems, ...dynamicAgents], [staticItems, dynamicAgents]);
+  const allItems = useMemo(() => [...staticItems, ...dynamicAgents, ...dynamicTasks], [staticItems, dynamicAgents, dynamicTasks]);
 
   const filtered = useMemo(() => {
     const scored = allItems
