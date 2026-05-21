@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, Bot, Users, PanelRightOpen, PanelRightClose, Settings2 } from "lucide-react";
 import { AgentQuickConfigDrawer } from "./agent-quick-config-drawer";
+import { ModelQuickPicker } from "./model-quick-picker";
 import { useHttp } from "@/hooks/use-ws";
 import { useAuthStore } from "@/stores/use-auth-store";
 import type { RunActivity, ActiveTeamTask } from "@/types/chat";
@@ -92,6 +93,8 @@ export function ChatTopBar({ agentId, isRunning, isBusy, activity, teamTasks, on
             {emoji ?? <Bot className="h-3.5 w-3.5 text-muted-foreground" />}
           </div>
           <span className="truncate text-sm font-semibold">{displayName}</span>
+          {/* Model quick picker */}
+          {agentId && <ModelQuickPicker agentId={agentId} />}
           {/* Status pill */}
           {isRunning ? (
             <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:text-blue-400">
