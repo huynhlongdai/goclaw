@@ -67,7 +67,9 @@ export function ChatInput({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      const cmdEnter = (e.metaKey || e.ctrlKey) && e.key === "Enter";
+      const plainEnter = e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing;
+      if ((cmdEnter || plainEnter) && !e.nativeEvent.isComposing) {
         e.preventDefault();
         handleSend();
       }
@@ -201,7 +203,7 @@ export function ChatInput({
           {/* Right: hint + send/stop */}
           {!voiceRecorder.isRecording && !isBusy && (
             <span className="hidden sm:block text-[11px] text-muted-foreground/40 mr-2">
-              Enter để gửi · Shift+Enter xuống dòng
+              Enter / ⌘+Enter để gửi · Shift+Enter xuống dòng
             </span>
           )}
 
