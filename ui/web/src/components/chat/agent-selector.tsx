@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Bot, ChevronDown } from "lucide-react";
+import { Bot, ChevronDown, Plus, Terminal } from "lucide-react";
 import { useHttp } from "@/hooks/use-ws";
 import { usePortalDropdownClose } from "@/hooks/use-portal-dropdown-close";
 import { useAuthStore } from "@/stores/use-auth-store";
+import { ROUTES } from "@/lib/constants";
 import type { AgentData } from "@/types/agent";
 
 interface AgentSelectorProps {
@@ -37,6 +39,18 @@ export function AgentSelector({ value, onChange }: AgentSelectorProps) {
       })
       .catch((err) => console.error("[AgentSelector] fetch agents failed:", err));
   }, [http, connected]);
+
+  const navigate = useNavigate();
+
+  const sortedAgents = useMemo(() => {
+    return [...agents].sort((a, b) => {
+      if (a.is_default && !b.is_default) return -1;
+      if (!a.is_default && b.is_default) return 1;
+      if (a.agent_type === "command" && b.agent_type !== "command") return -1;
+      if (a.agent_type !== "command" && b.agent_type === "command") return 1;
+      return (a.display_name || a.agent_key).localeCompare(b.display_name || b.agent_key);
+    });
+  }, [agents]);
 
   useLayoutEffect(() => {
     if (!open || !containerRef.current) return;
@@ -83,13 +97,14 @@ export function AgentSelector({ value, onChange }: AgentSelectorProps) {
           style={dropdownStyle}
           className="pointer-events-auto max-h-60 sm:max-h-80 overflow-y-auto rounded-lg border bg-popover p-1 shadow-md"
         >
-          {agents.length === 0 && (
+          {sortedAgents.length === 0 && (
             <div className="px-3 py-2 text-sm text-muted-foreground">
               {t("noAgentsAvailable")}
             </div>
           )}
-          {agents.map((agent) => {
+          {sortedAgents.map((agent) => {
             const emoji = agentEmoji(agent);
+            const isCommand = agent.agent_type === "command";
             return (
               <button
                 key={agent.agent_key}
@@ -102,18 +117,37 @@ export function AgentSelector({ value, onChange }: AgentSelectorProps) {
               >
                 {emoji ? (
                   <span className="text-base shrink-0">{emoji}</span>
+                ) : isCommand ? (
+                  <Terminal className="h-4 w-4 shrink-0 text-violet-500" />
                 ) : (
                   <Bot className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
                 <span className="flex-1 truncate text-left">
                   {agent.display_name || agent.agent_key}
                 </span>
-                {agent.is_default && (
-                  <span className="text-xs text-muted-foreground">{t("default")}</span>
-                )}
+                <div className="flex shrink-0 items-center gap-1">
+                  {isCommand && (
+                    <span className="rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400">CAO</span>
+                  )}
+                  {agent.is_default && (
+                    <span className="text-xs text-muted-foreground">{t("default")}</span>
+                  )}
+                </div>
               </button>
             );
           })}
+          {/* Create agent shortcut */}
+          <div className="mt-1 border-t pt-1">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { setOpen(false); navigate(ROUTES.AGENTS); }}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+              <span>Quản lý agents</span>
+            </button>
+          </div>
         </div>,
         document.body,
       )}

@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bot, ChevronDown, Sparkles } from "lucide-react";
+import { Bot, ChevronDown, Sparkles, Terminal } from "lucide-react";
 import type { AgentSummary } from "./hooks/use-agent-by-key";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { ActiveRunZone } from "@/components/chat/active-run-zone";
@@ -147,18 +147,27 @@ export const ChatThread = memo(function ChatThread({
       );
     }
 
+    const isCommandAgent = agent?.agent_type === "command";
+
     const starterPrompts: string[] = (() => {
       const raw = agent?.other_config?.starter_prompts;
       if (Array.isArray(raw)) return raw.filter((p): p is string => typeof p === "string");
       return [];
     })();
 
-    const defaultPrompts = [
-      "Bạn có thể giúp tôi điều gì?",
-      "Hãy giới thiệu bản thân",
-      "Cho tôi xem ví dụ",
-      "Bắt đầu một tác vụ mới",
-    ];
+    const defaultPrompts = isCommandAgent
+      ? [
+          "Liệt kê tất cả agents hiện có",
+          "Tạo một agent chuyên về data analysis",
+          "Cập nhật mô tả cho agent của tôi",
+          "Agent nào đang chạy?",
+        ]
+      : [
+          "Bạn có thể giúp tôi điều gì?",
+          "Hãy giới thiệu bản thân",
+          "Cho tôi xem ví dụ",
+          "Bắt đầu một tác vụ mới",
+        ];
 
     const prompts = starterPrompts.length > 0 ? starterPrompts : defaultPrompts;
 
@@ -166,13 +175,30 @@ export const ChatThread = memo(function ChatThread({
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-10 text-center animate-in fade-in-0 duration-300">
         {/* Agent avatar */}
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-border/60 bg-gradient-to-br from-muted/80 to-muted shadow-sm text-4xl">
-            {agent?.emoji ?? <Bot className="h-10 w-10 text-muted-foreground/60" />}
+          <div className={`flex h-20 w-20 items-center justify-center rounded-2xl border-2 bg-gradient-to-br shadow-sm text-4xl ${
+            isCommandAgent
+              ? "border-violet-500/30 from-violet-500/10 to-violet-500/5"
+              : "border-border/60 from-muted/80 to-muted"
+          }`}>
+            {agent?.emoji
+              ? <span>{agent.emoji}</span>
+              : isCommandAgent
+              ? <Terminal className="h-10 w-10 text-violet-500/70" />
+              : <Bot className="h-10 w-10 text-muted-foreground/60" />
+            }
           </div>
-          <div className="space-y-1">
-            <h2 className="text-lg font-bold">{agent?.display_name ?? t("empty.title")}</h2>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-center gap-2">
+              <h2 className="text-lg font-bold">{agent?.display_name ?? t("empty.title")}</h2>
+              {isCommandAgent && (
+                <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-600 dark:text-violet-400">CAO</span>
+              )}
+            </div>
             {agent?.agent_description && (
               <p className="max-w-sm text-sm text-muted-foreground">{agent.agent_description}</p>
+            )}
+            {!agent?.agent_description && isCommandAgent && (
+              <p className="max-w-sm text-sm text-muted-foreground">Quản lý và điều phối toàn bộ hệ thống agents của bạn.</p>
             )}
             {agent?.model && (
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
@@ -191,7 +217,11 @@ export const ChatThread = memo(function ChatThread({
                 key={prompt}
                 type="button"
                 onClick={() => onStarterPrompt(prompt)}
-                className="rounded-xl border bg-card px-4 py-3 text-left text-sm transition-all hover:border-primary/40 hover:bg-accent hover:shadow-sm"
+                className={`rounded-xl border bg-card px-4 py-3 text-left text-sm transition-all hover:shadow-sm ${
+                  isCommandAgent
+                    ? "hover:border-violet-500/30 hover:bg-violet-500/5"
+                    : "hover:border-primary/40 hover:bg-accent"
+                }`}
               >
                 <span className="line-clamp-2 text-foreground/80">{prompt}</span>
               </button>

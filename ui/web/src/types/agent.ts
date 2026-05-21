@@ -139,7 +139,7 @@ export interface AgentData {
   max_tool_iterations: number;
   workspace: string;
   restrict_to_workspace: boolean;
-  agent_type: "open" | "predefined";
+  agent_type: "open" | "predefined" | "command";
   is_default: boolean;
   status: string;
   created_at?: string;

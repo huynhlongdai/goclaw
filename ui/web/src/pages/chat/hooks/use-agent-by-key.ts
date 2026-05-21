@@ -10,6 +10,7 @@ export interface AgentSummary {
   agent_description?: string | null;
   model?: string;
   provider?: string;
+  agent_type?: string;
   other_config?: Record<string, unknown>;
 }
 
@@ -33,6 +34,7 @@ export function useAgentByKey(agentKey: string): AgentSummary | null {
             agent_description: found.agent_description,
             model: found.model,
             provider: found.provider,
+            agent_type: found.agent_type,
             other_config: found.other_config as Record<string, unknown> | undefined,
           });
         } else {
