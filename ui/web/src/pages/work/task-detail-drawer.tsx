@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Flag, Clock, CheckCircle2, CircleDot, Eye, Circle, Trash2, Pencil, Check, AlertOctagon, MessageSquareShare } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, Flag, Clock, CheckCircle2, CircleDot, Eye, Circle, Trash2, Pencil, Check, AlertOctagon, MessageSquareShare, ListChecks, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTasksStore } from "@/stores/use-tasks-store";
 import { useAgents } from "@/pages/agents/hooks/use-agents";
@@ -23,6 +23,8 @@ export function TaskDetailDrawer({ task, onClose, onDelete, onDispatch }: TaskDe
   const [editingDesc, setEditingDesc] = useState(false);
   const [titleDraft, setTitleDraft] = useState(task.title);
   const [descDraft, setDescDraft] = useState(task.description ?? "");
+  const [newCheckItem, setNewCheckItem] = useState("");
+  const checkInputRef = useRef<HTMLInputElement>(null);
 
   const saveTitle = () => {
     if (titleDraft.trim()) updateTask(task.id, { title: titleDraft.trim() });
@@ -206,6 +208,82 @@ export function TaskDetailDrawer({ task, onClose, onDelete, onDispatch }: TaskDe
               placeholder="bug, feature, docs..."
               className="w-full rounded-lg border bg-background px-3 py-2 text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
             />
+          </div>
+
+          {/* Checklist */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                <ListChecks className="h-3.5 w-3.5" />
+                Checklist
+                {(task.checklist_items?.length ?? 0) > 0 && (
+                  <span className="text-muted-foreground/70">
+                    ({task.checklist_items!.filter((i) => i.done).length}/{task.checklist_items!.length})
+                  </span>
+                )}
+              </p>
+            </div>
+            {/* Existing items */}
+            <div className="space-y-1 mb-2">
+              {(task.checklist_items ?? []).map((item) => (
+                <div key={item.id} className="flex items-center gap-2 group rounded-lg px-2 py-1.5 hover:bg-muted/50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = (task.checklist_items ?? []).map((ci) =>
+                        ci.id === item.id ? { ...ci, done: !ci.done } : ci
+                      );
+                      updateTask(task.id, { checklist_items: updated });
+                    }}
+                    className={cn("h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-colors",
+                      item.done ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40 hover:border-primary"
+                    )}
+                  >
+                    {item.done && <Check className="h-2.5 w-2.5" />}
+                  </button>
+                  <span className={cn("flex-1 text-xs", item.done && "line-through text-muted-foreground")}>{item.text}</span>
+                  <button
+                    type="button"
+                    onClick={() => updateTask(task.id, { checklist_items: (task.checklist_items ?? []).filter((ci) => ci.id !== item.id) })}
+                    className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-foreground hover:text-destructive transition-all"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {/* Add new item */}
+            <div className="flex items-center gap-2">
+              <input
+                ref={checkInputRef}
+                type="text"
+                value={newCheckItem}
+                onChange={(e) => setNewCheckItem(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newCheckItem.trim()) {
+                    const newItem = { id: Math.random().toString(36).slice(2), text: newCheckItem.trim(), done: false };
+                    updateTask(task.id, { checklist_items: [...(task.checklist_items ?? []), newItem] });
+                    setNewCheckItem("");
+                  }
+                }}
+                placeholder="Thêm mục… Enter để lưu"
+                className="flex-1 rounded-lg border bg-background px-2.5 py-1.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              <button
+                type="button"
+                disabled={!newCheckItem.trim()}
+                onClick={() => {
+                  if (!newCheckItem.trim()) return;
+                  const newItem = { id: Math.random().toString(36).slice(2), text: newCheckItem.trim(), done: false };
+                  updateTask(task.id, { checklist_items: [...(task.checklist_items ?? []), newItem] });
+                  setNewCheckItem("");
+                  checkInputRef.current?.focus();
+                }}
+                className="rounded-lg border p-1.5 text-muted-foreground hover:bg-accent disabled:opacity-40 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Timestamps */}

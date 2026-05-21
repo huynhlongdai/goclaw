@@ -9,6 +9,12 @@ export interface TaskComment {
   created_at: string;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -29,6 +35,7 @@ export interface Task {
   started_at?: string;
   completed_at?: string;
   comments?: TaskComment[];
+  checklist_items?: ChecklistItem[];
   subtask_ids?: string[];
 }
 

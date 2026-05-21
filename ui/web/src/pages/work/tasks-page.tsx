@@ -198,6 +198,21 @@ function TaskCard({ task, onDragStart, onClick, onDelete }: {
         </div>
       )}
 
+      {/* Checklist progress */}
+      {task.checklist_items && task.checklist_items.length > 0 && (() => {
+        const done = task.checklist_items.filter((i) => i.done).length;
+        const total = task.checklist_items.length;
+        const pct = Math.round((done / total) * 100);
+        return (
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full rounded-full bg-primary/70 transition-all" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[10px] text-muted-foreground tabular-nums">{done}/{total}</span>
+          </div>
+        );
+      })()}
+
       {/* Footer */}
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
         {task.assignee_name && (
