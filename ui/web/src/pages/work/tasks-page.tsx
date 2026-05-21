@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Plus, LayoutGrid, List, Bot, Clock, Trash2, Search, X } from "lucide-react";
+import { Plus, LayoutGrid, List, Bot, Clock, Trash2, Search, X, KanbanSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/lib/constants";
 import { useTasksStore, tasksByStatus } from "@/stores/use-tasks-store";
@@ -135,7 +135,27 @@ export function TasksPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {viewMode === "kanban" ? (
+        {tasks.length === 0 && !search && priorityFilter === "all" ? (
+          <div className="flex h-full items-center justify-center p-8">
+            <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-b from-primary/10 to-primary/5 border border-primary/10">
+                <KanbanSquare className="h-8 w-8 text-primary/50" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground/80 text-base">Board trống</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Tạo task đầu tiên để bắt đầu quản lý công việc.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => openCreate("todo")}
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Tạo task đầu tiên
+              </button>
+            </div>
+          </div>
+        ) : viewMode === "kanban" ? (
           <div className="flex h-full gap-3 p-4 min-w-max">
             {KANBAN_COLUMNS.map((status) => {
               const meta = TASK_STATUS_META[status];
