@@ -25,6 +25,11 @@ export function TasksPage() {
     setCreateOpen(true);
   };
 
+  const selectedTaskLive = useMemo(
+    () => (selectedTask ? (tasks.find((t) => t.id === selectedTask.id) ?? selectedTask) : null),
+    [tasks, selectedTask],
+  );
+
   const filteredTasks = useMemo(() => {
     let result = tasks;
     if (search.trim()) {
@@ -219,11 +224,11 @@ export function TasksPage() {
 
       <TaskCreateDialog open={createOpen} onOpenChange={setCreateOpen} initialStatus={createInitialStatus} />
 
-      {selectedTask && (
+      {selectedTaskLive && (
         <TaskDetailDrawer
-          task={selectedTask}
+          task={selectedTaskLive}
           onClose={() => setSelectedTask(null)}
-          onDelete={() => { deleteTask(selectedTask.id); setSelectedTask(null); }}
+          onDelete={() => { deleteTask(selectedTaskLive.id); setSelectedTask(null); }}
           onDispatch={(t: Task) => {
             setSelectedTask(null);
             navigate(`${ROUTES.CHAT}?agent=${t.assignee_id}&task=${t.id}`);
