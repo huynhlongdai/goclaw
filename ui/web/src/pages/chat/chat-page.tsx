@@ -14,6 +14,7 @@ import { AgentPickerPrompt } from "@/components/chat/agent-picker-prompt";
 import { useChatSessions } from "./hooks/use-chat-sessions";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { useChatSend } from "./hooks/use-chat-send";
+import { useAgentByKey } from "./hooks/use-agent-by-key";
 import { isOwnSession, parseSessionKey } from "@/lib/session-key";
 import { useVirtualKeyboard } from "@/hooks/use-virtual-keyboard";
 import { TaskPanel } from "@/components/chat/task-panel";
@@ -92,6 +93,8 @@ export function ChatPage() {
     onMessageAdded: handleMessageAdded,
     onExpectRun: expectRun,
   });
+
+  const currentAgent = useAgentByKey(agentId);
 
   const handleNewChat = useCallback(() => {
     navigate(`/chat/${encodeURIComponent(buildNewSessionKey())}`);
@@ -266,6 +269,8 @@ export function ChatPage() {
             loading={messagesLoading}
             scrollTrigger={scrollTrigger}
             onToggleTaskPanel={() => setTaskPanelOpen((v) => !v)}
+            agent={currentAgent}
+            onStarterPrompt={handleSend}
           />
 
           {!isOwn ? (

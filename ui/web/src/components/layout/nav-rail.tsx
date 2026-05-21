@@ -19,6 +19,7 @@ import {
   LogOut,
   Globe,
   Search,
+  KanbanSquare,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -43,6 +44,7 @@ export type NavSectionId =
   | "chat"
   | "agents"
   | "teams"
+  | "work"
   | "capabilities"
   | "data"
   | "channels"
@@ -62,6 +64,7 @@ export function getActiveSectionId(pathname: string): NavSectionId {
   if (pathname.startsWith("/chat")) return "chat";
   if (pathname.startsWith("/agents")) return "agents";
   if (pathname.startsWith("/teams")) return "teams";
+  if (pathname.startsWith("/work")) return "work";
   if (
     pathname.startsWith("/skills") ||
     pathname.startsWith("/builtin-tools") ||
@@ -106,6 +109,7 @@ export function getActiveSectionId(pathname: string): NavSectionId {
 }
 
 export const FIRST_ROUTE_FOR_SECTION: Partial<Record<NavSectionId, string>> = {
+  work: ROUTES.WORK_TASKS,
   capabilities: ROUTES.SESSIONS,
   data: ROUTES.MEMORY,
   channels: ROUTES.CHANNELS,
@@ -229,6 +233,12 @@ export function NavRail({
           label={t("nav.agentTeams")}
           active={activeSectionId === "teams"}
           onClick={() => handleDirect("teams", ROUTES.TEAMS)}
+        />
+        <RailItem
+          icon={KanbanSquare}
+          label="Work"
+          active={activeSectionId === "work"}
+          onClick={() => handleDirect("work", ROUTES.WORK_TASKS)}
         />
 
         <div className="my-1.5 w-6 border-t border-sidebar-border/60" />

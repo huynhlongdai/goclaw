@@ -47,4 +47,6 @@ export const ROUTES = {
   SELECT_TENANT: "/select-tenant",
   HOOKS: "/hooks",
   HOOK_DETAIL: "/hooks/:id",
+  WORK: "/work",
+  WORK_TASKS: "/work/tasks",
 } as const;

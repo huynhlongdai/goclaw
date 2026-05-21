@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Loader2, Bot, Users, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { Loader2, Bot, Users, PanelRightOpen, PanelRightClose, Settings2 } from "lucide-react";
+import { AgentQuickConfigDrawer } from "./agent-quick-config-drawer";
 import { useHttp } from "@/hooks/use-ws";
 import { useAuthStore } from "@/stores/use-auth-store";
 import type { RunActivity, ActiveTeamTask } from "@/types/chat";
@@ -29,6 +30,7 @@ const phaseLabels: Record<RunActivity["phase"], string> = {
 };
 
 export function ChatTopBar({ agentId, isRunning, isBusy, activity, teamTasks, onToggleTaskPanel, taskPanelOpen, session }: ChatTopBarProps) {
+  const [configOpen, setConfigOpen] = useState(false);
   const http = useHttp();
   const { t } = useTranslation("chat");
   const connected = useAuthStore((s) => s.connected);
@@ -129,6 +131,14 @@ export function ChatTopBar({ agentId, isRunning, isBusy, activity, teamTasks, on
               {usage.percent}%
             </div>
           )}
+          <button
+              type="button"
+              onClick={() => setConfigOpen(true)}
+              className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              title="Cài đặt nhanh agent"
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
           {teamTasks.length > 0 && (
             <button
               type="button"
@@ -141,6 +151,8 @@ export function ChatTopBar({ agentId, isRunning, isBusy, activity, teamTasks, on
           )}
         </div>
       </div>
+
+      <AgentQuickConfigDrawer agentId={agentId} open={configOpen} onClose={() => setConfigOpen(false)} />
 
       {/* Context usage progress bar */}
       {usage && (

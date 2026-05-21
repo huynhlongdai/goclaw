@@ -1,6 +1,7 @@
 import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bot, ChevronDown } from "lucide-react";
+import { Bot, ChevronDown, Sparkles } from "lucide-react";
+import type { AgentSummary } from "./hooks/use-agent-by-key";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { ActiveRunZone } from "@/components/chat/active-run-zone";
 import { SystemNotification } from "@/components/chat/system-notification";
@@ -25,6 +26,8 @@ interface ChatThreadProps {
   loading?: boolean;
   scrollTrigger?: number;
   onToggleTaskPanel?: () => void;
+  agent?: AgentSummary | null;
+  onStarterPrompt?: (prompt: string) => void;
 }
 
 /** Check if a message is tool-only (no user-visible text content) */
@@ -77,6 +80,7 @@ function buildDisplayItems(messages: ChatMessage[]): DisplayItem[] {
 export const ChatThread = memo(function ChatThread({
   messages, streamText, thinkingText, toolStream, blockReplies,
   activity, teamTasks, isRunning, isBusy, loading, scrollTrigger = 0, onToggleTaskPanel,
+  agent, onStarterPrompt,
 }: ChatThreadProps) {
   const { t } = useTranslation("chat");
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -142,15 +146,58 @@ export const ChatThread = memo(function ChatThread({
         </div>
       );
     }
+
+    const starterPrompts: string[] = (() => {
+      const raw = agent?.other_config?.starter_prompts;
+      if (Array.isArray(raw)) return raw.filter((p): p is string => typeof p === "string");
+      return [];
+    })();
+
+    const defaultPrompts = [
+      "Bạn có thể giúp tôi điều gì?",
+      "Hãy giới thiệu bản thân",
+      "Cho tôi xem ví dụ",
+      "Bắt đầu một tác vụ mới",
+    ];
+
+    const prompts = starterPrompts.length > 0 ? starterPrompts : defaultPrompts;
+
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center px-6">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-3xl">
-          <Bot className="h-8 w-8 text-muted-foreground/50" />
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-10 text-center animate-in fade-in-0 duration-300">
+        {/* Agent avatar */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-border/60 bg-gradient-to-br from-muted/80 to-muted shadow-sm text-4xl">
+            {agent?.emoji ?? <Bot className="h-10 w-10 text-muted-foreground/60" />}
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold">{agent?.display_name ?? t("empty.title")}</h2>
+            {agent?.agent_description && (
+              <p className="max-w-sm text-sm text-muted-foreground">{agent.agent_description}</p>
+            )}
+            {agent?.model && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
+                <Sparkles className="h-3 w-3" />
+                {agent.model.split("/").pop() ?? agent.model}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="space-y-1">
-          <p className="text-base font-semibold text-foreground/80">{t("empty.title")}</p>
-          <p className="text-sm text-muted-foreground">{t("empty.description")}</p>
-        </div>
+
+        {/* Starter prompts grid */}
+        {onStarterPrompt && (
+          <div className="grid w-full max-w-xl grid-cols-2 gap-2">
+            {prompts.slice(0, 4).map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => onStarterPrompt(prompt)}
+                className="rounded-xl border bg-card px-4 py-3 text-left text-sm transition-all hover:border-primary/40 hover:bg-accent hover:shadow-sm"
+              >
+                <span className="line-clamp-2 text-foreground/80">{prompt}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
