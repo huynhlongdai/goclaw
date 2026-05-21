@@ -12,10 +12,15 @@ RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 WORKDIR /app
 # Copy .npmrc first so pnpm resolves musl native bindings (needed on Alpine).
 # The lockfile already includes musl entries thanks to supportedArchitectures in .npmrc.
-COPY ui/web/.npmrc ui/web/package.json ui/web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
 COPY ui/web/ .
-RUN pnpm build
+# If pre-built dist/ is present in context, skip install+build entirely (saves ~1GB RAM on small servers).
+RUN if [ -d "dist" ]; then \
+      echo "Using pre-built ui/web/dist/"; \
+    else \
+      corepack prepare pnpm@10.28.2 --activate && \
+      pnpm install --frozen-lockfile && \
+      pnpm build; \
+    fi
 
 # ── Stage selector: pick web-builder output or empty dir ──
 FROM web-builder AS embedui-true
