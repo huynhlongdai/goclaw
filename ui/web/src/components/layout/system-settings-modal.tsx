@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Settings2, Loader2, Save, AlertTriangle, Info, ExternalLink, Network, Cog } from "lucide-react";
 import { Link } from "react-router";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -145,18 +145,18 @@ export function SystemSettingsModal({ open, onOpenChange }: SystemSettingsModalP
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex flex-col w-full sm:w-[520px] max-w-full p-0">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />{t("title")}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
         {loading ? (
           <div className="flex flex-1 items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : (
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
             <SystemSettingsEmbeddingCard
               embProvider={embProvider} setEmbProvider={setEmbProvider}
               embModel={embModel} setEmbModel={setEmbModel}
@@ -214,7 +214,7 @@ export function SystemSettingsModal({ open, onOpenChange }: SystemSettingsModalP
         )}
 
         {/* Footer */}
-        <div className="flex flex-col gap-3 border-t pt-4 shrink-0">
+        <div className="flex flex-col gap-3 border-t px-6 py-4 shrink-0">
           {embChanged && !embVerified && (
             <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />{t("embedding.verifyRequired")}
@@ -233,7 +233,7 @@ export function SystemSettingsModal({ open, onOpenChange }: SystemSettingsModalP
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

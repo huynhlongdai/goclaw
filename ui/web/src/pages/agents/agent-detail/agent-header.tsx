@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Bot, Eye, Heart, Settings, Sparkles, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Bot, Eye, Heart, Settings, Sparkles, Star, Trash2, Terminal, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router";
+import { ROUTES } from "@/lib/constants";
 import { useTranslation } from "react-i18next";
 import type { AgentData } from "@/types/agent";
 import type { HeartbeatConfig } from "@/pages/agents/hooks/use-agent-heartbeat";
@@ -24,9 +26,11 @@ interface AgentHeaderProps {
 
 export function AgentHeader({ agent, heartbeat, onBack, onDelete, onAdvanced, onHeartbeat, onSystemPrompt }: AgentHeaderProps) {
   const { t } = useTranslation("agents");
+  const navigate = useNavigate();
   const [v3Open, setV3Open] = useState(false);
 
   const emoji = agent.emoji ?? "";
+  const isCommand = agent.agent_type === "command";
   const selfEvolve = Boolean(agent.self_evolve);
   const title = agentDisplayName(agent, t("card.unnamedAgent"));
   const keyDisplay = agentKeyDisplay(agent.agent_key);
@@ -48,6 +52,8 @@ export function AgentHeader({ agent, heartbeat, onBack, onDelete, onAdvanced, on
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:h-12 sm:w-12">
           {emoji
             ? <span className="text-xl leading-none sm:text-2xl">{emoji}</span>
+            : isCommand
+            ? <Terminal className="h-5 w-5 sm:h-6 sm:w-6 text-violet-500" />
             : <Bot className="h-5 w-5 sm:h-6 sm:w-6" />}
         </div>
 
@@ -57,6 +63,9 @@ export function AgentHeader({ agent, heartbeat, onBack, onDelete, onAdvanced, on
             <h2 className="truncate text-base font-semibold">{title}</h2>
             {agent.is_default && (
               <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
+            )}
+            {isCommand && (
+              <span className="rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400">CAO</span>
             )}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -135,6 +144,17 @@ export function AgentHeader({ agent, heartbeat, onBack, onDelete, onAdvanced, on
           </div>
         </div>
 
+        {/* Chat quick-action for CAO */}
+        {isCommand && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="shrink-0 size-9" onClick={() => navigate(ROUTES.CHAT)}>
+                <MessageSquare className="h-4 w-4 text-violet-500" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">{t("nav.chat", { defaultValue: "Chat with agent" })}</TooltipContent>
+          </Tooltip>
+        )}
         {/* System prompt preview */}
         <Button variant="ghost" size="sm" onClick={onSystemPrompt} className="shrink-0 gap-1.5">
           <Eye className="h-4 w-4" />
