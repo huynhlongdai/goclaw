@@ -132,7 +132,7 @@ func (t *AgentManageTool) execList(ctx context.Context) *Result {
 		})
 	}
 	b, _ := json.Marshal(rows)
-	return &Result{Output: string(b)}
+	return &Result{ForLLM: string(b)}
 }
 
 func (t *AgentManageTool) execDescribe(ctx context.Context, args map[string]any) *Result {
@@ -170,7 +170,7 @@ func (t *AgentManageTool) execDescribe(ctx context.Context, args map[string]any)
 		IsDefault:        a.IsDefault,
 		UpdatedAt:        a.UpdatedAt,
 	})
-	return &Result{Output: string(out)}
+	return &Result{ForLLM: string(out)}
 }
 
 func (t *AgentManageTool) execCreate(ctx context.Context, args map[string]any) *Result {
@@ -236,7 +236,7 @@ func (t *AgentManageTool) execCreate(ctx context.Context, args map[string]any) *
 		"agent_key": ag.AgentKey,
 		"message":   fmt.Sprintf("Agent %q (%s) created successfully.", displayName, agentKey),
 	})
-	return &Result{Output: string(out)}
+	return &Result{ForLLM: string(out)}
 }
 
 func (t *AgentManageTool) execUpdate(ctx context.Context, args map[string]any) *Result {
@@ -295,7 +295,7 @@ func (t *AgentManageTool) execUpdate(ctx context.Context, args map[string]any) *
 		"updated":   updates,
 		"message":   fmt.Sprintf("Agent %q updated successfully.", key),
 	})
-	return &Result{Output: string(out)}
+	return &Result{ForLLM: string(out)}
 }
 
 // slugifyAgentKey converts a display name to a valid agent key.
