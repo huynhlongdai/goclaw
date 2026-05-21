@@ -47,7 +47,7 @@ const DEFAULTS: BrandConfig = {
   loginTitle: "Đăng nhập",
   loginMessage: "",
   loginBgStyle: "default",
-  showWorkModule: true,
+  showWorkModule: false,
   showTracesSection: true,
   showVaultSection: true,
 };

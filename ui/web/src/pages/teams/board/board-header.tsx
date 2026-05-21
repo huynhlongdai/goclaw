@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, Settings, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Clock, Settings, Trash2, Users, MessageSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import i18next from "i18next";
 import type { TeamData, TeamMemberData } from "@/types/team";
@@ -18,9 +18,10 @@ interface BoardHeaderProps {
   onSettings: () => void;
   onMembers: () => void;
   onRenameTeam?: (newName: string) => Promise<void>;
+  onChatLead?: () => void;
 }
 
-export function BoardHeader({ team, members, onBack, onDelete, onSettings, onMembers, onRenameTeam }: BoardHeaderProps) {
+export function BoardHeader({ team, members, onBack, onDelete, onSettings, onMembers, onRenameTeam, onChatLead }: BoardHeaderProps) {
   const { t } = useTranslation("teams");
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [auditLogsOpen, setAuditLogsOpen] = useState(false);
@@ -78,6 +79,12 @@ export function BoardHeader({ team, members, onBack, onDelete, onSettings, onMem
       </div>
 
       {/* Actions */}
+      {onChatLead && (
+        <Button variant="outline" size="sm" onClick={onChatLead} className="shrink-0 gap-1.5 text-primary">
+          <MessageSquare className="h-4 w-4" />
+          <span className="hidden sm:inline">Chat Lead</span>
+        </Button>
+      )}
       <Button variant="ghost" size="sm" onClick={onMembers} className="shrink-0 gap-1.5">
         <Users className="h-4 w-4" />
         <span className="hidden sm:inline">{t("members.title")}</span>

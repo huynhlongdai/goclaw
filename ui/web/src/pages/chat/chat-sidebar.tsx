@@ -1,6 +1,6 @@
-import { memo, useState, useMemo } from "react";
+import { memo, useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Search, MessageSquare, Trash2 } from "lucide-react";
+import { Plus, Search, MessageSquare, Trash2, Pencil } from "lucide-react";
 import { AgentSelector } from "@/components/chat/agent-selector";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ interface ChatSidebarProps {
   activeSessionKey: string;
   onSessionSelect: (key: string) => void;
   onDeleteSession?: (key: string) => void;
+  onRenameSession?: (key: string, label: string) => Promise<void>;
   onNewChat: () => void;
 }
 
@@ -64,12 +65,34 @@ export const ChatSidebar = memo(function ChatSidebar({
   activeSessionKey,
   onSessionSelect,
   onDeleteSession,
+  onRenameSession,
   onNewChat,
 }: ChatSidebarProps) {
   const { t: tc } = useTranslation("common");
   const { t } = useTranslation("chat");
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SessionInfo | null>(null);
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (renamingKey) renameInputRef.current?.select();
+  }, [renamingKey]);
+
+  const startRename = (session: SessionInfo, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRenameDraft(sessionLabel(session));
+    setRenamingKey(session.key);
+  };
+
+  const commitRename = async () => {
+    if (!renamingKey || !onRenameSession) { setRenamingKey(null); return; }
+    await onRenameSession(renamingKey, renameDraft);
+    setRenamingKey(null);
+  };
+
+  const cancelRename = () => setRenamingKey(null);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return sessions;
@@ -129,11 +152,10 @@ export const ChatSidebar = memo(function ChatSidebar({
               {group.items.map((session) => {
                 const isActive = session.key === activeSessionKey;
                 const label = sessionLabel(session);
+                const isRenaming = renamingKey === session.key;
                 return (
-                  <button
+                  <div
                     key={session.key}
-                    type="button"
-                    onClick={() => onSessionSelect(session.key)}
                     className={cn(
                       "group relative mx-2 flex w-[calc(100%-16px)] items-start gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
                       isActive
@@ -141,27 +163,67 @@ export const ChatSidebar = memo(function ChatSidebar({
                         : "hover:bg-accent/50 text-foreground/80 hover:text-foreground",
                     )}
                   >
-                    <MessageSquare className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", isActive ? "text-foreground" : "text-muted-foreground")} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-medium leading-tight">{label}</div>
-                      <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <span>{session.messageCount} tin nhắn</span>
-                        <span>·</span>
-                        <span>{formatRelativeTime(session.updated)}</span>
+                    <button
+                      type="button"
+                      onClick={() => !isRenaming && onSessionSelect(session.key)}
+                      className="flex min-w-0 flex-1 items-start gap-2.5 text-left"
+                    >
+                      <MessageSquare className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", isActive ? "text-foreground" : "text-muted-foreground")} />
+                      <div className="min-w-0 flex-1">
+                        {isRenaming ? (
+                          <input
+                            ref={renameInputRef}
+                            value={renameDraft}
+                            onChange={(e) => setRenameDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); void commitRename(); }
+                              if (e.key === "Escape") cancelRename();
+                            }}
+                            onBlur={() => void commitRename()}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full rounded border border-ring bg-background px-1.5 py-0.5 text-[13px] font-medium leading-tight outline-none"
+                          />
+                        ) : (
+                          <div className="truncate text-[13px] font-medium leading-tight">{label}</div>
+                        )}
+                        <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <span>{session.messageCount} tin nhắn</span>
+                          <span>·</span>
+                          <span>{formatRelativeTime(session.updated)}</span>
+                        </div>
                       </div>
-                    </div>
-                    {onDeleteSession && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(session); }}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setDeleteTarget(session); } }}
-                        className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 max-sm:opacity-100"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </span>
+                    </button>
+
+                    {/* Action buttons — shown on hover */}
+                    {!isRenaming && (
+                      <div className="mt-0.5 flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100">
+                        {onRenameSession && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => startRename(session, e)}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") startRename(session, e as unknown as React.MouseEvent); }}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                            title="Đổi tên"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </span>
+                        )}
+                        {onDeleteSession && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(session); }}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setDeleteTarget(session); } }}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            title="Xoá"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { X, Bot, ExternalLink, Cpu, FileText, Zap, Sparkles, Hash, Pencil, KanbanSquare, Terminal } from "lucide-react";
+import { X, Bot, ExternalLink, Cpu, FileText, Zap, Sparkles, Hash, Pencil, KanbanSquare, Terminal, BookOpen, Shield, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHttp } from "@/hooks/use-ws";
 import { useAuthStore } from "@/stores/use-auth-store";
 import { toast } from "@/stores/use-toast-store";
 import { useTasksStore } from "@/stores/use-tasks-store";
+import { useProviders } from "@/pages/providers/hooks/use-providers";
 import type { AgentData } from "@/types/agent";
 
 interface AgentQuickConfigDrawerProps {
@@ -18,9 +19,17 @@ export function AgentQuickConfigDrawer({ agentId, open, onClose }: AgentQuickCon
   const navigate = useNavigate();
   const http = useHttp();
   const connected = useAuthStore((s) => s.connected);
+  const { providers } = useProviders(open);
   const [agent, setAgent] = useState<AgentData | null>(null);
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState("");
+  const [editingPersona, setEditingPersona] = useState(false);
+  const [personaDraft, setPersonaDraft] = useState("");
+  const [editingModel, setEditingModel] = useState(false);
+  const [modelDraft, setModelDraft] = useState("");
+  const [providerDraft, setProviderDraft] = useState("");
+  const [editingIter, setEditingIter] = useState(false);
+  const [iterDraft, setIterDraft] = useState(0);
   const { tasks } = useTasksStore();
   const agentTasks = tasks.filter((t) => t.assignee_id && t.status !== "done" && t.status !== "cancelled" && agent?.id && t.assignee_id === agent.id);
 
@@ -35,24 +44,41 @@ export function AgentQuickConfigDrawer({ agentId, open, onClose }: AgentQuickCon
       .catch(() => setAgent(null));
   }, [open, http, connected, agentId]);
 
-  const saveDesc = async () => {
+  const patchAgent = async (updates: Record<string, unknown>, successMsg: string) => {
     if (!agent) return;
     try {
-      await http.put(`/v1/agents/${agent.id}`, { agent_description: descDraft.trim() || null });
-      setAgent((prev) => prev ? { ...prev, agent_description: descDraft.trim() || null } : prev);
-      toast.success("Đã cập nhật mô tả");
+      await http.put(`/v1/agents/${agent.id}`, updates);
+      setAgent((prev) => prev ? { ...prev, ...updates } as AgentData : prev);
+      toast.success(successMsg);
     } catch { toast.error("Lỗi cập nhật"); }
+  };
+
+  const saveDesc = async () => {
+    await patchAgent({ agent_description: descDraft.trim() || null }, "Đã cập nhật mô tả");
     setEditingDesc(false);
+  };
+
+  const savePersona = async () => {
+    await patchAgent({ frontmatter: personaDraft.trim() || null }, "Đã cập nhật nhân (persona)");
+    setEditingPersona(false);
+  };
+
+  const saveModel = async () => {
+    if (!modelDraft.trim() || !providerDraft.trim()) return;
+    await patchAgent({ model: modelDraft.trim(), provider: providerDraft.trim() }, "Đã cập nhật model");
+    setEditingModel(false);
+  };
+
+  const saveIter = async () => {
+    if (iterDraft < 1) return;
+    await patchAgent({ max_tool_iterations: iterDraft }, "Đã cập nhật giới hạn vòng lặp");
+    setEditingIter(false);
   };
 
   const toggleSelfEvolve = async () => {
     if (!agent || agent.agent_type !== "predefined") return;
     const next = !agent.self_evolve;
-    try {
-      await http.put(`/v1/agents/${agent.id}`, { self_evolve: next });
-      setAgent((prev) => prev ? { ...prev, self_evolve: next } : prev);
-      toast.success(next ? "Bật Self Evolve" : "Tắt Self Evolve");
-    } catch { toast.error("Lỗi cập nhật"); }
+    await patchAgent({ self_evolve: next }, next ? "Bật Self Evolve" : "Tắt Self Evolve");
   };
 
   const config = agent?.other_config as Record<string, unknown> | undefined;
@@ -105,43 +131,140 @@ export function AgentQuickConfigDrawer({ agentId, open, onClose }: AgentQuickCon
           {agent ? (
             <>
               {/* Description — editable */}
-              <div className="rounded-lg border bg-muted/20 p-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Mô tả</p>
-                  {!editingDesc && (
-                    <button type="button" onClick={() => { setDescDraft(agent.agent_description ?? ""); setEditingDesc(true); }}
+              <EditableBlock
+                label="Mô tả"
+                icon={<FileText className="h-3 w-3" />}
+                editing={editingDesc}
+                onEdit={() => { setDescDraft(agent.agent_description ?? ""); setEditingDesc(true); }}
+                onSave={saveDesc}
+                onCancel={() => setEditingDesc(false)}
+                draft={descDraft}
+                onDraftChange={setDescDraft}
+                placeholder="Chưa có mô tả. Click ✏ để thêm."
+                displayValue={agent.agent_description ?? ""}
+                rows={3}
+              />
+
+              {/* Nhân (Persona / Frontmatter) */}
+              <EditableBlock
+                label="Nhân (Persona)"
+                icon={<BookOpen className="h-3 w-3" />}
+                editing={editingPersona}
+                onEdit={() => { setPersonaDraft(agent.frontmatter ?? ""); setEditingPersona(true); }}
+                onSave={savePersona}
+                onCancel={() => setEditingPersona(false)}
+                draft={personaDraft}
+                onDraftChange={setPersonaDraft}
+                placeholder="Chưa có persona. Click ✏ để định nghĩa vai trò / chuyên môn."
+                displayValue={agent.frontmatter ?? ""}
+                rows={5}
+              />
+
+              {/* Model + Provider — inline editable */}
+              <div className="rounded-lg border bg-muted/20 p-3 space-y-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Model AI</p>
+                  {!editingModel && (
+                    <button type="button"
+                      onClick={() => { setModelDraft(agent.model ?? ""); setProviderDraft(agent.provider ?? ""); setEditingModel(true); }}
                       className="rounded p-0.5 text-muted-foreground hover:bg-accent transition-colors">
                       <Pencil className="h-3 w-3" />
                     </button>
                   )}
                 </div>
-                {editingDesc ? (
+                {editingModel ? (
                   <div className="space-y-2">
-                    <textarea autoFocus value={descDraft} onChange={(e) => setDescDraft(e.target.value)} rows={3}
-                      className="w-full rounded-md border bg-background px-2 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-ring" />
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Provider</label>
+                      <select
+                        value={providerDraft}
+                        onChange={(e) => setProviderDraft(e.target.value)}
+                        className="w-full rounded-md border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                      >
+                        <option value="">Chọn provider…</option>
+                        {providers.map((p) => (
+                          <option key={p.name} value={p.name}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Model</label>
+                      <input
+                        autoFocus
+                        value={modelDraft}
+                        onChange={(e) => setModelDraft(e.target.value)}
+                        placeholder="vd: gpt-4o, claude-3-5-sonnet-20241022"
+                        className="w-full rounded-md border bg-background px-2 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+                      />
+                    </div>
                     <div className="flex gap-1.5">
-                      <button type="button" onClick={saveDesc} className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">Lưu</button>
-                      <button type="button" onClick={() => setEditingDesc(false)} className="rounded-md border px-2.5 py-1 text-xs hover:bg-accent">Huỷ</button>
+                      <button type="button" onClick={saveModel} className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">Lưu</button>
+                      <button type="button" onClick={() => setEditingModel(false)} className="rounded-md border px-2.5 py-1 text-xs hover:bg-accent">Huỷ</button>
                     </div>
                   </div>
                 ) : (
-                  <p className={cn("text-xs leading-relaxed", agent.agent_description ? "text-foreground/80" : "italic text-muted-foreground/50")}>
-                    {agent.agent_description || "Chưa có mô tả. Click ✏ để thêm."}
-                  </p>
+                  <div className="space-y-1">
+                    <ConfigRow icon={<Cpu className="h-3.5 w-3.5" />} label="Model"
+                      value={<span className="font-mono text-xs">{agent.model?.split("/").pop() ?? "—"}</span>} />
+                    <ConfigRow icon={<Zap className="h-3.5 w-3.5" />} label="Provider" value={agent.provider || "—"} />
+                  </div>
                 )}
               </div>
 
-              {/* Model + Provider */}
+              {/* Config info */}
               <div className="space-y-1">
-                <ConfigRow icon={<Cpu className="h-3.5 w-3.5" />} label="Model"
-                  value={<span className="font-mono text-xs">{agent.model?.split("/").pop() ?? "—"}</span>} />
-                <ConfigRow icon={<Zap className="h-3.5 w-3.5" />} label="Provider" value={agent.provider || "—"} />
                 <ConfigRow icon={<FileText className="h-3.5 w-3.5" />} label="Prompt mode" value={<PromptModeBadge mode={promptMode} />} />
                 {agent.context_window > 0 && (
                   <ConfigRow icon={<Hash className="h-3.5 w-3.5" />} label="Context"
                     value={`${(agent.context_window / 1000).toFixed(0)}k`} />
                 )}
               </div>
+
+              {/* Quyền hạn (Permissions) — CAO gets extra controls */}
+              {isCommand && (
+                <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-3 space-y-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Shield className="h-3.5 w-3.5 text-violet-500" />
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-violet-600 dark:text-violet-400">Quyền hạn CAO</span>
+                  </div>
+
+                  {/* Max tool iterations */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Repeat className="h-3.5 w-3.5" />
+                      <span>Max vòng lặp</span>
+                    </div>
+                    {editingIter ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={1}
+                          max={200}
+                          value={iterDraft}
+                          onChange={(e) => setIterDraft(Number(e.target.value))}
+                          className="w-16 rounded border bg-background px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        <button type="button" onClick={saveIter} className="rounded bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">✓</button>
+                        <button type="button" onClick={() => setEditingIter(false)} className="rounded border px-1.5 py-0.5 text-[10px] hover:bg-accent">✕</button>
+                      </div>
+                    ) : (
+                      <button type="button"
+                        onClick={() => { setIterDraft(agent.max_tool_iterations ?? 30); setEditingIter(true); }}
+                        className="flex items-center gap-1 text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+                      >
+                        {agent.max_tool_iterations ?? 30}
+                        <Pencil className="h-2.5 w-2.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* CAO label */}
+                  <div className="flex items-center gap-2">
+                    <Terminal className="h-3.5 w-3.5 text-violet-500" />
+                    <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">Command Agent Orchestrator</span>
+                  </div>
+                </div>
+              )}
 
               {/* Self-evolve toggle (predefined agents only) */}
               {agent.agent_type === "predefined" && (
@@ -158,14 +281,6 @@ export function AgentQuickConfigDrawer({ agentId, open, onClose }: AgentQuickCon
                       agent.self_evolve ? "translate-x-4" : "translate-x-0"
                     )} />
                   </button>
-                </div>
-              )}
-
-              {/* CAO indicator */}
-              {isCommand && (
-                <div className="flex items-center gap-2 rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2.5">
-                  <Terminal className="h-3.5 w-3.5 text-violet-500" />
-                  <span className="text-xs text-violet-600 dark:text-violet-400 font-medium">Command Agent Orchestrator</span>
                 </div>
               )}
 
@@ -228,5 +343,57 @@ function PromptModeBadge({ mode }: { mode: string }) {
     <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium", colors[mode] ?? colors.none)}>
       {mode}
     </span>
+  );
+}
+
+interface EditableBlockProps {
+  label: string;
+  icon: React.ReactNode;
+  editing: boolean;
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  draft: string;
+  onDraftChange: (v: string) => void;
+  placeholder: string;
+  displayValue: string;
+  rows?: number;
+}
+
+function EditableBlock({ label, icon, editing, onEdit, onSave, onCancel, draft, onDraftChange, placeholder, displayValue, rows = 3 }: EditableBlockProps) {
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">{icon}</span>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        </div>
+        {!editing && (
+          <button type="button" onClick={onEdit}
+            className="rounded p-0.5 text-muted-foreground hover:bg-accent transition-colors">
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div className="space-y-2">
+          <textarea
+            autoFocus
+            value={draft}
+            onChange={(e) => onDraftChange(e.target.value)}
+            rows={rows}
+            className="w-full rounded-md border bg-background px-2 py-1.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <div className="flex gap-1.5">
+            <button type="button" onClick={onSave} className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">Lưu</button>
+            <button type="button" onClick={onCancel} className="rounded-md border px-2.5 py-1 text-xs hover:bg-accent">Huỷ</button>
+          </div>
+        </div>
+      ) : (
+        <p className={cn("text-xs leading-relaxed whitespace-pre-wrap", displayValue ? "text-foreground/80" : "italic text-muted-foreground/50")}>
+          {displayValue || placeholder}
+        </p>
+      )}
+    </div>
   );
 }

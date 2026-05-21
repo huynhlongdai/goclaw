@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate, Link } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { WifiOff, LayoutDashboard, MessageSquare, Bot, MoreHorizontal, KanbanSquare } from "lucide-react";
+import { WifiOff, LayoutDashboard, MessageSquare, Bot, MoreHorizontal, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavRail, getActiveSectionId, GROUPED_SECTIONS, FIRST_ROUTE_FOR_SECTION } from "./nav-rail";
 import type { NavSectionId } from "./nav-rail";
@@ -13,7 +13,6 @@ import { CommandPalette } from "@/components/command-palette/command-palette";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { useUiStore } from "@/stores/use-ui-store";
 import { useAuthStore } from "@/stores/use-auth-store";
-import { useBrandStore } from "@/stores/use-brand-store";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { usePendingPairingsCount } from "@/hooks/use-pending-pairings-count";
 import { ROUTES } from "@/lib/constants";
@@ -151,23 +150,15 @@ function MobileBottomNav({ activeSectionId }: MobileBottomNavProps) {
   const { t } = useTranslation("sidebar");
   const navigate = useNavigate();
   const [moreOpen, setMoreOpen] = useState(false);
-  const showWorkModule = useBrandStore((s) => s.showWorkModule);
 
-  const allPrimaryItems = [
+  const primaryItems = [
     { id: "chat" as NavSectionId, icon: MessageSquare, label: t("nav.chat"), to: ROUTES.CHAT },
     { id: "agents" as NavSectionId, icon: Bot, label: t("nav.agents"), to: ROUTES.AGENTS },
-    { id: "work" as NavSectionId, icon: KanbanSquare, label: "Work", to: ROUTES.WORK_TASKS, hidden: !showWorkModule },
+    { id: "teams" as NavSectionId, icon: Users, label: t("nav.agentTeams"), to: ROUTES.TEAMS },
     { id: "overview" as NavSectionId, icon: LayoutDashboard, label: t("nav.overview"), to: ROUTES.OVERVIEW },
   ];
-  const primaryItems = allPrimaryItems.filter((i) => !("hidden" in i && i.hidden));
 
   const moreGroups = [
-    {
-      label: "Work",
-      items: [
-        { label: "Task Board", to: ROUTES.WORK_TASKS },
-      ],
-    },
     {
       label: t("groups.conversations"),
       items: [

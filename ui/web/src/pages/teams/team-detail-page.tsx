@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useNavigate } from "react-router";
 import { DetailPageSkeleton } from "@/components/shared/loading-skeleton";
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { useTranslation } from "react-i18next";
@@ -7,6 +8,7 @@ import { BoardHeader } from "./board/board-header";
 import { BoardContainer } from "./board/board-container";
 import { TeamInfoDialog } from "./board/team-info-dialog";
 import { TeamMembersDialog } from "./board/team-members-dialog";
+import { ROUTES } from "@/lib/constants";
 import type { TeamData, TeamMemberData, TeamAccessSettings, ScopeEntry } from "@/types/team";
 
 const TeamWorkspaceDialog = lazy(() =>
@@ -20,9 +22,10 @@ interface TeamDetailPageProps {
 
 export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
   const { t } = useTranslation("teams");
+  const navigate = useNavigate();
   const {
     getTeam, getTeamTasks, getTeamScopes, addMember, removeMember, deleteTeam,
-    getTaskDetail, getTaskLight, deleteTask, deleteTasksBulk, addTaskComment, updateTeam,
+    getTaskDetail, getTaskLight, deleteTask, deleteTasksBulk, addTaskComment, createTask, updateTeam,
   } = useTeams();
 
   // Wrap addTaskComment to match (teamId, taskId, content) signature expected by UI components.
@@ -92,6 +95,12 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
     await reload();
   }, [teamId, updateTeam, reload]);
 
+  const handleChatLead = useCallback(() => {
+    const leadKey = team?.lead_agent_key;
+    if (!leadKey) return;
+    navigate(`${ROUTES.CHAT}?agentId=${encodeURIComponent(leadKey)}`);
+  }, [navigate, team?.lead_agent_key]);
+
   if (loading || !team) {
     return <DetailPageSkeleton tabs={3} />;
   }
@@ -109,6 +118,7 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
         onSettings={() => setInfoOpen(true)}
         onMembers={() => setMembersOpen(true)}
         onRenameTeam={handleRenameTeam}
+        onChatLead={team.lead_agent_key ? handleChatLead : undefined}
       />
 
       <BoardContainer
@@ -122,6 +132,7 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
         deleteTask={deleteTask}
         deleteTasksBulk={deleteTasksBulk}
         addTaskComment={handleAddComment}
+        createTask={createTask}
         onWorkspace={() => setWorkspaceOpen(true)}
       />
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Plus, LayoutGrid, List, FolderOpen } from "lucide-react";
+import { RefreshCw, Plus, LayoutGrid, List, FolderOpen, Activity } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useBoardStore } from "../stores/use-board-store";
 import type { GroupBy } from "../stores/use-board-store";
@@ -122,15 +122,24 @@ export const BoardToolbar = memo(function BoardToolbar({
         <div className="flex rounded-lg border bg-muted/50 p-0.5">
           <button
             onClick={() => setViewMode("kanban")}
+            title="Kanban"
             className={"cursor-pointer rounded-md p-1.5 " + (viewMode === "kanban" ? "bg-background shadow-sm" : "text-muted-foreground")}
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setViewMode("list")}
+            title="Danh sách"
             className={"cursor-pointer rounded-md p-1.5 " + (viewMode === "list" ? "bg-background shadow-sm" : "text-muted-foreground")}
           >
             <List className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("feed")}
+            title="Hoạt động nhóm"
+            className={"cursor-pointer rounded-md p-1.5 " + (viewMode === "feed" ? "bg-background shadow-sm text-green-500" : "text-muted-foreground")}
+          >
+            <Activity className="h-4 w-4" />
           </button>
         </div>
 

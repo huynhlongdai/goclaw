@@ -35,9 +35,6 @@ export function ChatPage() {
   // Fallback agent ID used only when URL has no session key
   const [agentIdFallback, setAgentIdFallback] = useState("");
 
-  // Agent is confirmed when URL has a session (agentId parsed) or user explicitly picked one
-  const agentConfirmed = !!urlSessionKey || !!agentIdFallback;
-
   // Derive agentId from URL (source of truth), fallback to state when no session
   const agentId = useMemo(() => {
     if (urlSessionKey) {
@@ -47,12 +44,17 @@ export function ChatPage() {
     return agentIdFallback;
   }, [urlSessionKey, agentIdFallback]);
 
+  // Agent is confirmed when we actually have a resolved agentId (non-empty).
+  // A urlSessionKey alone is NOT enough — the session format may not encode an agentId.
+  const agentConfirmed = !!agentId;
+
   const {
     sessions,
     loading: sessionsLoading,
     refresh: refreshSessions,
     buildNewSessionKey,
     deleteSession,
+    renameSession,
   } = useChatSessions(agentId);
 
   const {
@@ -205,6 +207,7 @@ export function ChatPage() {
               activeSessionKey={sessionKey}
               onSessionSelect={handleSessionSelectMobile}
               onDeleteSession={handleDeleteSession}
+              onRenameSession={renameSession}
               onNewChat={handleNewChatMobile}
             />
           </div>
@@ -218,6 +221,7 @@ export function ChatPage() {
           activeSessionKey={sessionKey}
           onSessionSelect={handleSessionSelect}
           onDeleteSession={handleDeleteSession}
+          onRenameSession={renameSession}
           onNewChat={handleNewChat}
         />
       )}

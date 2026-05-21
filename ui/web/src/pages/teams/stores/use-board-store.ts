@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ViewMode = "kanban" | "list";
+export type ViewMode = "kanban" | "list" | "feed";
 export type GroupBy = "status" | "owner";
 
 interface BoardState {

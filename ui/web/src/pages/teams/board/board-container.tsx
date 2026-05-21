@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useBoardStore } from "../stores/use-board-store";
-import { toast } from "@/stores/use-toast-store";
 import { buildTaskLookup, buildMemberLookup, buildEmojiLookup } from "./board-utils";
 import { BoardToolbar } from "./board-toolbar";
 import { KanbanBoard } from "./kanban-board";
 import { TaskList } from "../task-sections";
+import { TeamActivityFeed } from "./team-activity-feed";
+import { CreateTaskDialog } from "./create-task-dialog";
 
 const TaskDetailDialog = lazy(() =>
   import("../task-sections/task-detail-dialog").then((m) => ({ default: m.TaskDetailDialog }))
@@ -30,12 +31,13 @@ interface BoardContainerProps {
   deleteTask?: (teamId: string, taskId: string) => Promise<void>;
   deleteTasksBulk?: (teamId: string, taskIds: string[]) => Promise<number>;
   addTaskComment?: (teamId: string, taskId: string, content: string) => Promise<void>;
+  createTask?: (teamId: string, params: { subject: string; description?: string; priority?: number; taskType?: string; assignTo?: string; channel?: string; chatId?: string }) => Promise<TeamTaskData>;
   onWorkspace?: () => void;
 }
 
 export const BoardContainer = memo(function BoardContainer({
   teamId, members, scopes, isTeamV2,
-  getTeamTasks, getTaskDetail, getTaskLight, deleteTask, deleteTasksBulk, addTaskComment, onWorkspace,
+  getTeamTasks, getTaskDetail, getTaskLight, deleteTask, deleteTasksBulk, addTaskComment, createTask, onWorkspace,
 }: BoardContainerProps) {
   const { t } = useTranslation("teams");
   const viewMode = useBoardStore((s) => s.viewMode);
@@ -46,6 +48,7 @@ export const BoardContainer = memo(function BoardContainer({
   const [selectedTask, setSelectedTask] = useState<TeamTaskData | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [singleDeleting, setSingleDeleting] = useState(false);
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
   const { tasks, initialized, refreshing, load } = useBoardTasks({
     teamId,
@@ -70,7 +73,7 @@ export const BoardContainer = memo(function BoardContainer({
   // ── Callbacks for children ──
 
   const handleRefresh = useCallback(() => load(true), [load]);
-  const handleCreateTask = useCallback(() => toast.info(t("board.createViaChat")), [t]);
+  const handleCreateTask = useCallback(() => setCreateTaskOpen(true), []);
   const handleTaskClick = useCallback((task: TeamTaskData) => setSelectedTask(task), []);
   const handleCloseDetail = useCallback(() => setSelectedTask(null), []);
   const handleNavigateTask = useCallback((taskId: string) => {
@@ -113,7 +116,9 @@ export const BoardContainer = memo(function BoardContainer({
       />
 
       <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
-        {!initialized ? (
+        {viewMode === "feed" ? (
+          <TeamActivityFeed teamId={teamId} members={members} />
+        ) : !initialized ? (
           <div className="py-12 text-center text-sm text-muted-foreground">{t("tasks.loading")}</div>
         ) : viewMode === "kanban" ? (
           <KanbanBoard
@@ -152,6 +157,18 @@ export const BoardContainer = memo(function BoardContainer({
         onConfirm={confirmDeleteTask}
         loading={singleDeleting}
       />
+
+      {createTask && (
+        <CreateTaskDialog
+          open={createTaskOpen}
+          onOpenChange={setCreateTaskOpen}
+          teamId={teamId}
+          members={members}
+          selectedScope={selectedScope}
+          createTask={createTask}
+          onCreated={() => load(true)}
+        />
+      )}
 
       {selectedTask && (
         <Suspense fallback={null}>

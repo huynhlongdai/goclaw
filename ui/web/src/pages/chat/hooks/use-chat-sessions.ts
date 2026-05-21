@@ -62,6 +62,19 @@ export function useChatSessions(agentId: string) {
     }
   }, [ws, connected, loadSessions]);
 
+  const renameSession = useCallback(async (key: string, label: string) => {
+    if (!connected) return;
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    try {
+      await ws.call(Methods.SESSIONS_PATCH, { key, label: trimmed });
+      setSessions((prev) => prev.map((s) => s.key === key ? { ...s, label: trimmed } : s));
+    } catch (err) {
+      toast.error("Lỗi đổi tên cuộc trò chuyện", userFriendlyError(err));
+      throw err;
+    }
+  }, [ws, connected]);
+
   // Update session label in-place when backend generates a title.
   const handleSessionUpdated = useCallback((payload: unknown) => {
     const event = payload as { sessionKey?: string; label?: string };
@@ -81,5 +94,6 @@ export function useChatSessions(agentId: string) {
     refresh: loadSessions,
     buildNewSessionKey,
     deleteSession,
+    renameSession,
   };
 }
