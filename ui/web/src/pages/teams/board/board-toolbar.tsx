@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw, Plus, LayoutGrid, List, FolderOpen, Activity } from "lucide-react";
+import { RefreshCw, LayoutGrid, List, FolderOpen, Activity } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useBoardStore } from "../stores/use-board-store";
 import type { GroupBy } from "../stores/use-board-store";
@@ -19,7 +19,6 @@ interface BoardToolbarProps {
   onScopeChange: (s: ScopeEntry | null) => void;
   spinning: boolean;
   onRefresh: () => void;
-  onCreateTask: () => void;
   onWorkspace?: () => void;
 }
 
@@ -38,7 +37,7 @@ const GROUP_OPTIONS: { value: GroupBy; labelKey: string }[] = [
 export const BoardToolbar = memo(function BoardToolbar({
   statusFilter, onStatusFilter,
   scopes, selectedScope, onScopeChange,
-  spinning, onRefresh, onCreateTask, onWorkspace,
+  spinning, onRefresh, onWorkspace,
 }: BoardToolbarProps) {
   const { t } = useTranslation("teams");
   const { viewMode, setViewMode, groupBy, setGroupBy } = useBoardStore();
@@ -143,9 +142,6 @@ export const BoardToolbar = memo(function BoardToolbar({
           </button>
         </div>
 
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={onCreateTask}>
-          <Plus className="h-4 w-4" />
-        </Button>
         <Button variant="outline" size="sm" onClick={onRefresh} disabled={spinning} className="gap-1">
           <RefreshCw className={"h-3.5 w-3.5" + (spinning ? " animate-spin" : "")} />
         </Button>

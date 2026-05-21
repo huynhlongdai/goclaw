@@ -9,6 +9,7 @@ import { BoardContainer } from "./board/board-container";
 import { TeamInfoDialog } from "./board/team-info-dialog";
 import { TeamMembersDialog } from "./board/team-members-dialog";
 import { ROUTES } from "@/lib/constants";
+import { uniqueId } from "@/lib/utils";
 import type { TeamData, TeamMemberData, TeamAccessSettings, ScopeEntry } from "@/types/team";
 
 const TeamWorkspaceDialog = lazy(() =>
@@ -25,7 +26,7 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
   const navigate = useNavigate();
   const {
     getTeam, getTeamTasks, getTeamScopes, addMember, removeMember, deleteTeam,
-    getTaskDetail, getTaskLight, deleteTask, deleteTasksBulk, addTaskComment, createTask, updateTeam,
+    getTaskDetail, getTaskLight, deleteTask, deleteTasksBulk, addTaskComment, updateTeam,
   } = useTeams();
 
   // Wrap addTaskComment to match (teamId, taskId, content) signature expected by UI components.
@@ -98,7 +99,8 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
   const handleChatLead = useCallback(() => {
     const leadKey = team?.lead_agent_key;
     if (!leadKey) return;
-    navigate(`${ROUTES.CHAT}?agentId=${encodeURIComponent(leadKey)}`);
+    const newSessionKey = `agent:${leadKey}:ws:direct:${uniqueId()}`;
+    navigate(`${ROUTES.CHAT}/${encodeURIComponent(newSessionKey)}`);
   }, [navigate, team?.lead_agent_key]);
 
   if (loading || !team) {
@@ -132,7 +134,6 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
         deleteTask={deleteTask}
         deleteTasksBulk={deleteTasksBulk}
         addTaskComment={handleAddComment}
-        createTask={createTask}
         onWorkspace={() => setWorkspaceOpen(true)}
       />
 
