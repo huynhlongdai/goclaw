@@ -14,57 +14,11 @@ function genId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-const DEMO_TASKS: Task[] = [
-  {
-    id: "demo-1",
-    title: "Review báo cáo doanh thu Q2",
-    description: "Phân tích số liệu và tóm tắt xu hướng",
-    status: "todo",
-    priority: "high",
-    assignee_type: "agent",
-    assignee_name: "Tiểu Hồ",
-    tags: ["finance"],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "demo-2",
-    title: "Soạn thảo email thông báo",
-    description: "Gửi thông báo cập nhật sản phẩm đến khách hàng",
-    status: "in_progress",
-    priority: "medium",
-    assignee_type: "agent",
-    assignee_name: "Tiểu Hồ",
-    tags: ["marketing"],
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "demo-3",
-    title: "Kiểm tra bug thanh toán",
-    description: "Xác nhận lỗi trên flow thanh toán mobile",
-    status: "in_review",
-    priority: "urgent",
-    tags: ["bug", "payment"],
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "demo-4",
-    title: "Cập nhật documentation API",
-    status: "done",
-    priority: "low",
-    tags: ["docs"],
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    updated_at: new Date().toISOString(),
-    completed_at: new Date().toISOString(),
-  },
-];
 
 export const useTasksStore = create<TasksState>()(
   persist(
-    (set) => ({
-      tasks: DEMO_TASKS,
+    (set, _get) => ({
+      tasks: [] as Task[],
 
       addTask: (data) => {
         const now = new Date().toISOString();

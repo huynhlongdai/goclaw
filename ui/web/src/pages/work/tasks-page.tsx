@@ -1,18 +1,27 @@
 import { useState, useMemo } from "react";
-import { Plus, LayoutGrid, List, Bot, Clock, CheckCircle2, CircleDot, Eye, Trash2, Circle } from "lucide-react";
+import { useNavigate } from "react-router";
+import { Plus, LayoutGrid, List, Bot, Clock, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/lib/constants";
 import { useTasksStore, tasksByStatus } from "@/stores/use-tasks-store";
 import type { Task, TaskStatus } from "@/types/task";
 import { TASK_STATUS_META, TASK_PRIORITY_META, KANBAN_COLUMNS } from "@/types/task";
 import { TaskCreateDialog } from "./task-create-dialog";
-import { TaskDetailDrawer } from "./task-detail-drawer";
+import { TaskDetailDrawer, StatusIcon } from "./task-detail-drawer";
 
 export function TasksPage() {
+  const navigate = useNavigate();
   const { tasks, moveTask, deleteTask } = useTasksStore();
   const [createOpen, setCreateOpen] = useState(false);
+  const [createInitialStatus, setCreateInitialStatus] = useState<TaskStatus>("todo");
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
+
+  const openCreate = (status: TaskStatus = "todo") => {
+    setCreateInitialStatus(status);
+    setCreateOpen(true);
+  };
 
   const grouped = useMemo(() => tasksByStatus(tasks), [tasks]);
   const openTasks = tasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
@@ -58,7 +67,7 @@ export function TasksPage() {
           </div>
           <button
             type="button"
-            onClick={() => setCreateOpen(true)}
+            onClick={() => openCreate("todo")}
             className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -81,7 +90,7 @@ export function TasksPage() {
                   key={status}
                   className={cn(
                     "flex w-72 shrink-0 flex-col rounded-xl border transition-colors",
-                    isDragOver ? "border-primary/40 bg-primary/5" : "bg-muted/30",
+                    isDragOver ? "border-primary/40 bg-primary/5" : status === "blocked" ? "bg-red-500/5" : "bg-muted/30",
                   )}
                   onDragOver={(e) => { e.preventDefault(); setDragOver(status); }}
                   onDragLeave={() => setDragOver(null)}
@@ -98,7 +107,7 @@ export function TasksPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setCreateOpen(true)}
+                      onClick={() => openCreate(status)}
                       className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     >
                       <Plus className="h-3.5 w-3.5" />
@@ -131,29 +140,23 @@ export function TasksPage() {
         )}
       </div>
 
-      <TaskCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <TaskCreateDialog open={createOpen} onOpenChange={setCreateOpen} initialStatus={createInitialStatus} />
 
       {selectedTask && (
         <TaskDetailDrawer
           task={selectedTask}
           onClose={() => setSelectedTask(null)}
-          onMove={(status: TaskStatus) => { moveTask(selectedTask.id, status); setSelectedTask(null); }}
           onDelete={() => { deleteTask(selectedTask.id); setSelectedTask(null); }}
+          onDispatch={(t: Task) => {
+            setSelectedTask(null);
+            navigate(`${ROUTES.CHAT}?agent=${t.assignee_id}&task=${t.id}`);
+          }}
         />
       )}
     </div>
   );
 }
 
-function StatusIcon({ status }: { status: TaskStatus }) {
-  switch (status) {
-    case "todo": return <Circle className="h-3.5 w-3.5 text-slate-400" />;
-    case "in_progress": return <CircleDot className="h-3.5 w-3.5 text-blue-500" />;
-    case "in_review": return <Eye className="h-3.5 w-3.5 text-amber-500" />;
-    case "done": return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
-    case "cancelled": return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
-  }
-}
 
 function TaskCard({ task, onDragStart, onClick, onDelete }: {
   task: Task;
