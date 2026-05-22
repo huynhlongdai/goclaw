@@ -1,7 +1,11 @@
-import { useState, useRef, useCallback, useLayoutEffect, type KeyboardEvent } from "react";
+import { useState, useRef, useCallback, useLayoutEffect, useEffect, type KeyboardEvent, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Send, Square, Paperclip, X, Mic } from "lucide-react";
 import { useVoiceRecorder } from "@/hooks/use-voice-recorder";
+import { MentionPicker, type MentionAgent } from "./mention-picker";
+import { useHttp } from "@/hooks/use-ws";
+import { useAuthStore } from "@/stores/use-auth-store";
+import type { AgentData } from "@/types/agent";
 
 export interface AttachedFile {
   file: File;
@@ -32,6 +36,34 @@ export function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const voiceRecorder = useVoiceRecorder();
+
+  // @ mention state
+  const http = useHttp();
+  const connected = useAuthStore((s) => s.connected);
+  const [mentionAgents, setMentionAgents] = useState<MentionAgent[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionStart, setMentionStart] = useState(-1);
+
+  // Lazy-load agents for mention once connected
+  useEffect(() => {
+    if (!connected) return;
+    http
+      .get<{ agents: AgentData[] }>("/v1/agents")
+      .then((res) => {
+        setMentionAgents(
+          (res.agents ?? [])
+            .filter((a) => a.status === "active")
+            .map((a) => ({
+              key: a.agent_key,
+              name: a.display_name || a.agent_key,
+              emoji: a.emoji,
+              agentType: a.agent_type,
+            })),
+        );
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -65,8 +97,45 @@ export function ChatInput({
     }
   }, [value, files, onSend, onFilesChange, disabled]);
 
+  const detectMention = useCallback((val: string, cursor: number) => {
+    const textBefore = val.slice(0, cursor);
+    const atIdx = textBefore.lastIndexOf("@");
+    if (atIdx < 0) { setMentionQuery(null); return; }
+    const charBefore = atIdx > 0 ? textBefore[atIdx - 1] : " ";
+    if (charBefore !== " " && charBefore !== "\n") { setMentionQuery(null); return; }
+    const query = textBefore.slice(atIdx + 1);
+    if (query.includes(" ")) { setMentionQuery(null); return; }
+    setMentionQuery(query);
+    setMentionStart(atIdx);
+  }, []);
+
+  const handleMentionSelect = useCallback(
+    (agent: MentionAgent) => {
+      if (mentionStart < 0) return;
+      const before = value.slice(0, mentionStart);
+      const after = value.slice(textareaRef.current?.selectionStart ?? mentionStart + (mentionQuery?.length ?? 0) + 1);
+      const inserted = `@${agent.key} `;
+      const newVal = before + inserted + after;
+      setValue(newVal);
+      setMentionQuery(null);
+      // Restore focus and cursor after the inserted mention
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const pos = before.length + inserted.length;
+          textareaRef.current.setSelectionRange(pos, pos);
+        }
+      });
+    },
+    [value, mentionStart, mentionQuery],
+  );
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (mentionQuery !== null && e.key === "Escape") {
+        setMentionQuery(null);
+        return;
+      }
       const cmdEnter = (e.metaKey || e.ctrlKey) && e.key === "Enter";
       const plainEnter = e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing;
       if ((cmdEnter || plainEnter) && !e.nativeEvent.isComposing) {
@@ -74,15 +143,16 @@ export function ChatInput({
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend, mentionQuery],
   );
 
-  const handleInput = useCallback(() => {
+  const handleInput = useCallback((e?: ChangeEvent<HTMLTextAreaElement>) => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 200) + "px";
-  }, []);
+    if (e) detectMention(e.target.value, e.target.selectionStart ?? 0);
+  }, [detectMention]);
 
   // Sync textarea height on mount and whenever value changes externally (e.g. after send).
   // Prevents browser's default rows=1 height from leaving a gap above the icons.
@@ -137,7 +207,16 @@ export function ChatInput({
       <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
 
       {/* Floating input container */}
-      <div className="rounded-2xl border bg-card/95 backdrop-blur-sm shadow-md transition-shadow focus-within:shadow-lg focus-within:ring-1 focus-within:ring-ring/50">
+      <div className="relative rounded-2xl border bg-card/95 backdrop-blur-sm shadow-md transition-shadow focus-within:shadow-lg focus-within:ring-1 focus-within:ring-ring/50">
+        {/* @ Mention picker */}
+        {mentionQuery !== null && (
+          <MentionPicker
+            query={mentionQuery}
+            agents={mentionAgents}
+            onSelect={handleMentionSelect}
+            onDismiss={() => setMentionQuery(null)}
+          />
+        )}
 
         {/* Textarea row */}
         <div className="flex items-end px-4 pt-3 pb-1">
@@ -159,9 +238,9 @@ export function ChatInput({
             <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => { setValue(e.target.value); handleInput(e); }}
               onKeyDown={handleKeyDown}
-              onInput={handleInput}
+              onInput={() => handleInput()}
               placeholder={t("sendMessage")}
               disabled={disabled}
               rows={1}

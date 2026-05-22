@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import i18next from "i18next";
 import { TeamSettingsTab } from "../team-settings-tab";
 import { TeamFeaturesModal } from "../team-features-modal";
+import { TeamLeadAgentSection } from "./team-lead-agent-section";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { toast } from "@/stores/use-toast-store";
 import type { TeamData, TeamMemberData } from "@/types/team";
@@ -19,10 +20,11 @@ interface TeamInfoDialogProps {
   members: TeamMemberData[];
   onSaved: () => void;
   onUpdateDescription?: (newDescription: string) => Promise<void>;
+  onChangeLead?: (agentId: string) => Promise<void>;
 }
 
 export function TeamInfoDialog({
-  open, onOpenChange, team, teamId, members, onSaved, onUpdateDescription,
+  open, onOpenChange, team, teamId, members, onSaved, onUpdateDescription, onChangeLead,
 }: TeamInfoDialogProps) {
   const { t } = useTranslation("teams");
   const [featuresOpen, setFeaturesOpen] = useState(false);
@@ -32,11 +34,6 @@ export function TeamInfoDialog({
     if (err === "minLength") toast.error(i18next.t("teams:rename.emptyError"));
     else if (err === "stale") toast.error(i18next.t("teams:rename.staleError"));
   }, []);
-
-  // Resolve lead name from members (more reliable than team.lead_display_name which can be empty)
-  const leadMember = members.find((m) => m.role === "lead");
-  const leadName = leadMember?.display_name || leadMember?.agent_key
-    || team.lead_display_name || team.lead_agent_key || "—";
 
   return (
     <>
@@ -82,14 +79,15 @@ export function TeamInfoDialog({
               )}
             </div>
             <div>
-              <span className="text-xs text-muted-foreground">{t("detail.lead")}</span>
-              <p className="mt-0.5 font-medium">{leadName}</p>
-            </div>
-            <div>
               <span className="text-xs text-muted-foreground">{t("members.title")}</span>
               <p className="mt-0.5 font-medium">{t("detail.memberCountPlural", { count: members.length })}</p>
             </div>
           </div>
+
+          {/* Lead Agent Panel */}
+          {onChangeLead && (
+            <TeamLeadAgentSection team={team} onChangeLead={onChangeLead} />
+          )}
 
           {/* Settings form */}
           <TeamSettingsTab teamId={teamId} team={team} onSaved={() => { onSaved(); onOpenChange(false); }} />

@@ -108,3 +108,20 @@ export interface MessageGroup {
   timestamp: number;
   isStreaming: boolean;
 }
+
+/**
+ * Represents the identity of who/what the user is chatting with.
+ * Decouples identity display from session key parsing.
+ * Phase 1: only "agent" kind. Future phases will add "team_lead", "default_assistant", "thread".
+ */
+export interface ChatIdentity {
+  kind: "agent";
+  agentKey: string;
+  displayName: string;
+  description?: string | null;
+  emoji?: string;
+  provider?: string;
+  model?: string;
+  isDefault?: boolean;
+  agentType?: "open" | "predefined" | "command";
+}

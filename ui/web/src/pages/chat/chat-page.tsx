@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router";
 import { Eye, PanelLeftOpen } from "lucide-react";
 import { useAuthStore } from "@/stores/use-auth-store";
+import { useHttp } from "@/hooks/use-ws";
 import { useIsMobile } from "@/hooks/use-media-query";
+import type { AgentData } from "@/types/agent";
 import { cn } from "@/lib/utils";
 import { ChatSidebar } from "./chat-sidebar";
 import { ChatThread } from "./chat-thread";
@@ -11,6 +13,9 @@ import { ChatInput, type AttachedFile } from "@/components/chat/chat-input";
 import { ChatTopBar } from "@/components/chat/chat-top-bar";
 import { DropZone } from "@/components/chat/drop-zone";
 import { AgentPickerPrompt } from "@/components/chat/agent-picker-prompt";
+import { ChatLanding } from "@/components/chat/chat-landing";
+import { AgentCreateDialog } from "@/pages/agents/agent-create-dialog";
+import { useAgents } from "@/pages/agents/hooks/use-agents";
 import { useChatSessions } from "./hooks/use-chat-sessions";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { useChatSend } from "./hooks/use-chat-send";
@@ -25,9 +30,11 @@ export function ChatPage() {
   const navigate = useNavigate();
   const connected = useAuthStore((s) => s.connected);
   const userId = useAuthStore((s) => s.userId);
+  const http = useHttp();
 
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const [files, setFiles] = useState<AttachedFile[]>([]);
+  const [agentCreateOpen, setAgentCreateOpen] = useState(false);
 
   // sessionKey derived from URL — single source of truth, no separate state
   const sessionKey = urlSessionKey ?? "";
@@ -47,6 +54,23 @@ export function ChatPage() {
   // Agent is confirmed when we actually have a resolved agentId (non-empty).
   // A urlSessionKey alone is NOT enough — the session format may not encode an agentId.
   const agentConfirmed = !!agentId;
+
+  // Phase 2: Auto-select the workspace default agent when /chat is opened cold
+  // (no URL session key, no agentIdFallback set). Skips the landing for users
+  // who have configured a default agent.
+  useEffect(() => {
+    if (agentId || !connected) return;
+    http
+      .get<{ agents: AgentData[] }>("/v1/agents")
+      .then((res) => {
+        const defaultAgent = (res.agents ?? []).find(
+          (a) => a.status === "active" && a.is_default,
+        );
+        if (defaultAgent) setAgentIdFallback(defaultAgent.agent_key);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected]);
 
   const {
     sessions,
@@ -97,6 +121,7 @@ export function ChatPage() {
   });
 
   const currentAgent = useAgentByKey(agentId);
+  const { createAgent } = useAgents();
 
   const handleNewChat = useCallback(() => {
     navigate(`/chat/${encodeURIComponent(buildNewSessionKey())}`);
@@ -243,6 +268,7 @@ export function ChatPage() {
         <div className="shrink-0">
           <ChatTopBar
             agentId={agentId}
+            agentSummary={currentAgent}
             isRunning={isRunning}
             isBusy={isBusy}
             activity={activity}
@@ -260,39 +286,46 @@ export function ChatPage() {
         )}
 
         <DropZone onDrop={handleDropFiles}>
-          <ChatThread
-            messages={messages}
-            streamText={streamText}
-            thinkingText={thinkingText}
-            toolStream={toolStream}
-            blockReplies={blockReplies}
-            activity={activity}
-            teamTasks={teamTasks}
-            isRunning={isRunning}
-            isBusy={isBusy}
-            loading={messagesLoading}
-            scrollTrigger={scrollTrigger}
-            onToggleTaskPanel={() => setTaskPanelOpen((v) => !v)}
-            agent={currentAgent}
-            onStarterPrompt={handleSend}
-          />
-
-          {!isOwn ? (
-            <div className="mx-3 mb-3 flex items-center gap-2 rounded-xl border bg-muted/50 px-4 py-3 text-sm text-muted-foreground shadow-sm">
-              <Eye className="h-4 w-4" />
-              {t("readOnly")}
-            </div>
-          ) : !agentConfirmed ? (
-            <AgentPickerPrompt onSelect={handleAgentChange} />
+          {!agentConfirmed && messages.length === 0 ? (
+            /* Full-screen landing when no agent and no messages yet */
+            <ChatLanding onSelect={handleAgentChange} onCreateAgent={() => setAgentCreateOpen(true)} />
           ) : (
-            <ChatInput
-              onSend={handleSend}
-              onAbort={handleAbort}
-              isBusy={isBusy}
-              disabled={!connected}
-              files={files}
-              onFilesChange={setFiles}
-            />
+            <>
+              <ChatThread
+                messages={messages}
+                streamText={streamText}
+                thinkingText={thinkingText}
+                toolStream={toolStream}
+                blockReplies={blockReplies}
+                activity={activity}
+                teamTasks={teamTasks}
+                isRunning={isRunning}
+                isBusy={isBusy}
+                loading={messagesLoading}
+                scrollTrigger={scrollTrigger}
+                onToggleTaskPanel={() => setTaskPanelOpen((v) => !v)}
+                agent={currentAgent}
+                onStarterPrompt={handleSend}
+              />
+
+              {!isOwn ? (
+                <div className="mx-3 mb-3 flex items-center gap-2 rounded-xl border bg-muted/50 px-4 py-3 text-sm text-muted-foreground shadow-sm">
+                  <Eye className="h-4 w-4" />
+                  {t("readOnly")}
+                </div>
+              ) : !agentConfirmed ? (
+                <AgentPickerPrompt onSelect={handleAgentChange} />
+              ) : (
+                <ChatInput
+                  onSend={handleSend}
+                  onAbort={handleAbort}
+                  isBusy={isBusy}
+                  disabled={!connected}
+                  files={files}
+                  onFilesChange={setFiles}
+                />
+              )}
+            </>
           )}
         </DropZone>
       </div>
@@ -304,6 +337,18 @@ export function ChatPage() {
 
       {/* Task panel — toggleable sidebar on the right */}
       <TaskPanel tasks={teamTasks} open={taskPanelOpen} onClose={() => setTaskPanelOpen(false)} />
+
+      {/* Agent Builder: create agent dialog accessible from chat landing */}
+      <AgentCreateDialog
+        open={agentCreateOpen}
+        onOpenChange={setAgentCreateOpen}
+        onCreate={async (data) => {
+          const created = await createAgent(data);
+          if (created?.agent_key) {
+            setAgentIdFallback(created.agent_key);
+          }
+        }}
+      />
     </div>
   );
 }

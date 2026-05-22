@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, Settings, Trash2, Users, MessageSquare } from "lucide-react";
+import { ArrowLeft, Clock, Settings, Trash2, Users, MessageSquare, MessagesSquare } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import i18next from "i18next";
 import type { TeamData, TeamMemberData } from "@/types/team";
 import { TeamFeaturesModal } from "../team-features-modal";
 import { TeamAuditLogsModal } from "../team-audit-logs-modal";
+import { TeamSharedThreadPanel } from "./team-shared-thread-panel";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { toast } from "@/stores/use-toast-store";
 
@@ -25,6 +26,7 @@ export function BoardHeader({ team, members, onBack, onDelete, onSettings, onMem
   const { t } = useTranslation("teams");
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [auditLogsOpen, setAuditLogsOpen] = useState(false);
+  const [threadOpen, setThreadOpen] = useState(false);
   const leadMember = members.find((m) => m.role === "lead");
   const leadName = leadMember?.display_name || leadMember?.agent_key
     || team.lead_display_name || team.lead_agent_key;
@@ -85,6 +87,10 @@ export function BoardHeader({ team, members, onBack, onDelete, onSettings, onMem
           <span className="hidden sm:inline">Chat Lead</span>
         </Button>
       )}
+      <Button variant="ghost" size="sm" onClick={() => setThreadOpen(true)} className="shrink-0 gap-1.5">
+        <MessagesSquare className="h-4 w-4" />
+        <span className="hidden sm:inline">Thread</span>
+      </Button>
       <Button variant="ghost" size="sm" onClick={onMembers} className="shrink-0 gap-1.5">
         <Users className="h-4 w-4" />
         <span className="hidden sm:inline">{t("members.title")}</span>
@@ -109,6 +115,7 @@ export function BoardHeader({ team, members, onBack, onDelete, onSettings, onMem
 
       <TeamFeaturesModal open={featuresOpen} onOpenChange={setFeaturesOpen} />
       <TeamAuditLogsModal open={auditLogsOpen} onOpenChange={setAuditLogsOpen} teamId={team.id} />
+      <TeamSharedThreadPanel open={threadOpen} onOpenChange={setThreadOpen} team={team} members={members} />
     </div>
   );
 }

@@ -96,6 +96,11 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
     await reload();
   }, [teamId, updateTeam, reload]);
 
+  const handleChangeLead = useCallback(async (agentId: string) => {
+    await updateTeam(teamId, { lead: agentId });
+    await reload();
+  }, [teamId, updateTeam, reload]);
+
   const handleChatLead = useCallback(() => {
     const leadKey = team?.lead_agent_key;
     if (!leadKey) return;
@@ -146,6 +151,7 @@ export function TeamDetailPage({ teamId, onBack }: TeamDetailPageProps) {
         members={members}
         onSaved={reload}
         onUpdateDescription={handleUpdateDescription}
+        onChangeLead={handleChangeLead}
       />
 
       {/* Members dialog */}

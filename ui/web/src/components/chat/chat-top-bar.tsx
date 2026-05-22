@@ -8,9 +8,12 @@ import { useAuthStore } from "@/stores/use-auth-store";
 import type { RunActivity, ActiveTeamTask } from "@/types/chat";
 import type { AgentData } from "@/types/agent";
 import type { SessionInfo } from "@/types/session";
+import type { AgentSummary } from "@/pages/chat/hooks/use-agent-by-key";
 
 interface ChatTopBarProps {
   agentId: string;
+  /** Pre-fetched agent summary — skips internal fetch when provided. */
+  agentSummary?: AgentSummary | null;
   isRunning: boolean;
   isBusy: boolean;
   activity: RunActivity | null;
@@ -30,33 +33,44 @@ const phaseLabels: Record<RunActivity["phase"], string> = {
   leader_processing: "Processing team results…",
 };
 
-export function ChatTopBar({ agentId, isRunning, isBusy, activity, teamTasks, onToggleTaskPanel, taskPanelOpen, session }: ChatTopBarProps) {
+export function ChatTopBar({ agentId, agentSummary, isRunning, isBusy, activity, teamTasks, onToggleTaskPanel, taskPanelOpen, session }: ChatTopBarProps) {
   const [configOpen, setConfigOpen] = useState(false);
   const http = useHttp();
   const { t } = useTranslation("chat");
   const connected = useAuthStore((s) => s.connected);
-  const [agent, setAgent] = useState<{ name: string; emoji?: string } | null>(null);
+  const [fetchedAgent, setFetchedAgent] = useState<{ name: string; emoji?: string; model?: string; provider?: string } | null>(null);
 
-  // Fetch agent display info (lightweight, cached per agentId)
+  // Only fetch internally if no agentSummary is passed from parent
   useEffect(() => {
+    if (agentSummary !== undefined) return;
     if (!connected || !agentId) return;
-    setAgent(null);
+    setFetchedAgent(null);
     http
       .get<{ agents: AgentData[] }>("/v1/agents")
       .then((res) => {
         const found = (res.agents ?? []).find((a) => a.agent_key === agentId);
         if (found) {
-          const emoji = found.emoji || undefined;
-          setAgent({ name: found.display_name || found.agent_key, emoji });
+          setFetchedAgent({
+            name: found.display_name || found.agent_key,
+            emoji: found.emoji ?? undefined,
+            model: found.model,
+            provider: found.provider,
+          });
         } else {
-          setAgent({ name: agentId });
+          setFetchedAgent({ name: agentId });
         }
       })
-      .catch(() => setAgent({ name: agentId }));
-  }, [http, connected, agentId]);
+      .catch(() => setFetchedAgent({ name: agentId }));
+  }, [http, connected, agentId, agentSummary]);
 
-  const displayName = agent?.name ?? agentId;
-  const emoji = agent?.emoji;
+  const resolved = agentSummary
+    ? { name: agentSummary.display_name, emoji: agentSummary.emoji, model: agentSummary.model, provider: agentSummary.provider }
+    : fetchedAgent;
+
+  const displayName = resolved?.name ?? agentId;
+  const emoji = resolved?.emoji;
+  const model = resolved?.model;
+  const provider = resolved?.provider;
   const PanelIcon = taskPanelOpen ? PanelRightClose : PanelRightOpen;
 
   // Context-usage badge: only renders when the caller passes a session with
@@ -92,7 +106,14 @@ export function ChatTopBar({ agentId, isRunning, isBusy, activity, teamTasks, on
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-muted text-base">
             {emoji ?? <Bot className="h-3.5 w-3.5 text-muted-foreground" />}
           </div>
-          <span className="truncate text-sm font-semibold">{displayName}</span>
+          <div className="flex flex-col min-w-0">
+            <span className="truncate text-sm font-semibold leading-tight">{displayName}</span>
+            {(provider || model) && (
+              <span className="truncate text-[10px] text-muted-foreground leading-tight font-mono">
+                {[provider, model].filter(Boolean).join(" · ")}
+              </span>
+            )}
+          </div>
           {/* Model quick picker */}
           {agentId && <ModelQuickPicker agentId={agentId} />}
           {/* Status pill */}
