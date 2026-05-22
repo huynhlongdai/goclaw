@@ -65,11 +65,11 @@ RUN set -eux; \
         if [ -n "$TAGS" ]; then TAGS="$TAGS,redis"; else TAGS="redis"; fi; \
     fi; \
     if [ -n "$TAGS" ]; then TAGS="-tags $TAGS"; fi; \
-    CGO_ENABLED=0 GOOS=linux \
-    go build -ldflags="-s -w -X github.com/nextlevelbuilder/goclaw/cmd.Version=${VERSION}" \
+    GOGC=50 CGO_ENABLED=0 GOOS=linux \
+    go build -p 1 -ldflags="-s -w -X github.com/nextlevelbuilder/goclaw/cmd.Version=${VERSION}" \
     ${TAGS} -o /out/goclaw . && \
-    CGO_ENABLED=0 GOOS=linux \
-    go build -ldflags="-s -w" -o /out/pkg-helper ./cmd/pkg-helper
+    GOGC=50 CGO_ENABLED=0 GOOS=linux \
+    go build -p 1 -ldflags="-s -w" -o /out/pkg-helper ./cmd/pkg-helper
 
 # ── Stage 2: Runtime ──
 FROM alpine:3.23
